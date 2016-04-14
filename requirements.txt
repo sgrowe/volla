@@ -1,5 +1,6 @@
 brotlipy==0.2.0
 cffi==1.5.2
+dj-database-url==0.4.1
 Django==1.9.5
 django-cors-headers==1.1.0
 djangorestframework==3.3.3
