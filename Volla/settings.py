@@ -24,9 +24,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'p-zelz*2j$k-n6(b#i^1n4pnx53^zjw@)nln^+yr4o%h84#g#)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('VOLLA_DEV') == 'TRUE'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['api.volla.co']
 
 
 # Application definition
