@@ -4,14 +4,14 @@ from hashids import Hashids
 default_hashids = Hashids()
 
 
-class HashidField(models.AutoField):
+class HashidAutoField(models.AutoField):
     def __init__(self, *args, **kwargs):
-        self.hashids = kwargs.pop('hashid', default=default_hashids)
+        self.hashids = kwargs.pop('hashid', default_hashids)
         super().__init__(*args, **kwargs)
 
     def from_db_value(self, value, expression, connection, context):
         int_id = super().from_db_value(value, expression, connection, context)
-        return self.hashids.encode([int_id])
+        return self.hashids.encode(int_id)
 
     def get_prep_value(self, value):
         decoded = self.hashids.decode(value)
