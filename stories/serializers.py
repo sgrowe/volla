@@ -5,7 +5,7 @@ from hashids import Hashids
 
 
 class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
-    id = HashidField(read_only=True)
+    # id = HashidField(read_only=True)
 
     class Meta:
         model = VollumeStructure
@@ -13,7 +13,7 @@ class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class VollumeSerializer(serializers.HyperlinkedModelSerializer):
-    id = HashidField(read_only=True)
+    # id = HashidField(read_only=True)
 
     class Meta:
         model = Vollume
@@ -21,7 +21,7 @@ class VollumeSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class ParaSerializer(serializers.HyperlinkedModelSerializer):
-    id = HashidField(read_only=True)
+    # id = HashidField(read_only=True)
 
     class Meta:
         model = Para
