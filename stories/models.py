@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MinLengthValidator, MaxLengthValidator
 
 
+# TODO: rename "order_in_story" to "page"
+
+
 class Vollume(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(User, related_name='stories')

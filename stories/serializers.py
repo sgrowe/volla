@@ -4,8 +4,17 @@ from .fields import HashidField
 from hashids import Hashids
 
 
+class ParaSerializer(serializers.HyperlinkedModelSerializer):
+    # id = HashidField(read_only=True)
+
+    class Meta:
+        model = Para
+        fields = ('id', 'text')
+
+
 class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
     # id = HashidField(read_only=True)
+    para = ParaSerializer()
 
     class Meta:
         model = VollumeStructure
@@ -14,15 +23,8 @@ class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
 
 class VollumeSerializer(serializers.HyperlinkedModelSerializer):
     # id = HashidField(read_only=True)
+    structure = VollumeStructureSerializer(many=True)
 
     class Meta:
         model = Vollume
         fields = ('id', 'created', 'author', 'title', 'structure')
-
-
-class ParaSerializer(serializers.HyperlinkedModelSerializer):
-    # id = HashidField(read_only=True)
-
-    class Meta:
-        model = Para
-        fields = ('id', 'text')
