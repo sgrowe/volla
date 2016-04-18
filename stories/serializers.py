@@ -1,29 +1,28 @@
-from django.contrib.auth.models import User, Group
-from .models import Vollume, VollumeStructure, Para
 from rest_framework import serializers
-
-
-class UserSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = User
-        fields = ('username', 'email')
+from .models import Vollume, VollumeStructure, Para
+from .fields import HashidField
+from hashids import Hashids
 
 
 class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
+    id = HashidField(read_only=True)
+
     class Meta:
         model = VollumeStructure
-        fields = ('author', 'story', 'order_in_story', 'para')
+        fields = ('id', 'author', 'story', 'order_in_story', 'para')
 
 
 class VollumeSerializer(serializers.HyperlinkedModelSerializer):
-    structure = VollumeStructureSerializer(many=True)
+    id = HashidField(read_only=True)
 
     class Meta:
         model = Vollume
-        fields = ('created', 'author', 'structure')
+        fields = ('id', 'created', 'author', 'title', 'structure')
 
 
 class ParaSerializer(serializers.HyperlinkedModelSerializer):
+    id = HashidField(read_only=True)
+
     class Meta:
         model = Para
         fields = ('id', 'text')

@@ -1,12 +1,6 @@
-from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
 from .models import Vollume, VollumeStructure, Para
-from .serializers import VollumeSerializer, VollumeStructureSerializer, UserSerializer, ParaSerializer
-
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+from .serializers import VollumeSerializer, VollumeStructureSerializer, ParaSerializer
 
 
 class VollumeViewSet(viewsets.ModelViewSet):
