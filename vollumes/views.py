@@ -1,7 +1,7 @@
-from django.core.urlresolvers import resolve
-from django.db.transaction import atomic
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from django.core.urlresolvers import resolve
+from django.db.transaction import atomic
 from .models import Vollume, VollumeStructure, Para
 from .serializers import VollumeSerializer, VollumeStructureSerializer
 from .filter_backends import query_params_filter
@@ -10,6 +10,15 @@ from .filter_backends import query_params_filter
 class VollumeViewSet(viewsets.ModelViewSet):
     queryset = Vollume.objects.all()
     serializer_class = VollumeSerializer
+
+    def create(self, request):
+        vollume = Vollume(
+            author=request.user,
+            title=request.data['title']
+        )
+        vollume.save()
+        serializer = VollumeSerializer(vollume, context={'request': request})
+        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
 
 class ParagraphViewSet(viewsets.ModelViewSet):
@@ -23,7 +32,7 @@ class ParagraphViewSet(viewsets.ModelViewSet):
             para = Para(text=request.data['text'])
             para.save()
             structure = VollumeStructure(
-                author=self.request.user,
+                author=request.user,
                 vollume=vollume,
                 page=request.data['page'],
                 para=para

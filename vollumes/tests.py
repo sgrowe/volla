@@ -38,24 +38,46 @@ class VollumeApiTest(APITestCase):
         self.assertEqual(json['count'], len(json['results']))
         self.assertEqual(json['results'][0]['title'], title)
 
+    def test_anonymous_users_cant_create_vollumes(self):
+        post_data = {
+            'author': "",
+            'title': "A great story",
+        }
+        url = reverse('vollume-list')
+        response = self.client.post(url, post_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_create_vollume(self):
         author = User(username="test user", email="test@volla.co")
         author.save()
-        author_url = user_url(author)
+        self.client.force_login(author)
         post_data = {
-            'author': author_url,
             'title': "A great story",
         }
         url = reverse('vollume-list')
         response = self.client.post(url, post_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         json = response.data
-        self.assertTrue(json['author'].endswith(author_url))
+        self.assertTrue(json['author'].endswith(user_url(author)))
         self.assertEqual(json['title'], "A great story")
         self.assertEqual(len(json['structure']), 0)
 
 
 class ParagraphApiTest(APITestCase):
+
+    def test_anonymous_users_cant_create_paragraphs(self):
+        author = User(username="test user", email="test@volla.co")
+        author.save()
+        vollume = Vollume(author=author, title="A tale of two tests")
+        vollume.save()
+        url = reverse('paragraph-list')
+        post_data = {
+            'vollume': vollume.get_absolute_url(),
+            'page': 1,
+            'text': "Some brilliant words!"
+        }
+        response = self.client.post(url, post_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_paragraph(self):
         author = User(username="test user", email="test@volla.co")
@@ -75,8 +97,3 @@ class ParagraphApiTest(APITestCase):
         self.assertEqual(json['page'], 1)
         self.assertTrue(json['author'].endswith(user_url(author)))
         self.assertEqual(json['para']['text'], "Some brilliant words!")
-        #
-        # self.assertEqual()
-        # self.assertIn('author', response.data)
-        # self.assertIn('vollume', response.data)
-        # self.assertIn('page', response.data)
