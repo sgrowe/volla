@@ -1,30 +1,31 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MinLengthValidator, MaxLengthValidator
-
-
-# TODO: rename "order_in_story" to "page"
+from django.core.validators import MinValueValidator, MinLengthValidator
+from django.core.urlresolvers import reverse
 
 
 class Vollume(models.Model):
     created = models.DateTimeField(auto_now_add=True)
-    author = models.ForeignKey(User, related_name='stories')
-    title = models.CharField(max_length=150, validators=[MinLengthValidator(10)])
+    author = models.ForeignKey(User, related_name='vollumes')
+    title = models.CharField(max_length=150, validators=[MinLengthValidator(1)])
     # allows_forks = models.BooleanField()
     # allows_alternatives_paras = models.BooleanField()
 
     def __str__(self):
         return self.title
 
+    def get_absolute_url(self):
+        return reverse('vollume-detail', kwargs={'pk': self.id})
+
 
 class VollumeStructure(models.Model):
-    story = models.ForeignKey(Vollume, related_name='structure')
+    vollume = models.ForeignKey(Vollume, related_name='structure')
     author = models.ForeignKey(User, related_name='contributions')
-    order_in_story = models.IntegerField(validators=[MinValueValidator(1)])
+    page = models.IntegerField(validators=[MinValueValidator(1)])
     para = models.OneToOneField('Para')
 
     def __str__(self):
-        return "{} - order {}".format(self.story.title, self.order_in_story)
+        return "{} - page {}".format(self.vollume.title, self.page)
 
 
 class Para(models.Model):

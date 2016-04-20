@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from stories.fields import HashidField
+from vollumes.fields import HashidField
 from hashids import Hashids
 
 

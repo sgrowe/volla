@@ -1,7 +1,5 @@
 from rest_framework import serializers
 from .models import Vollume, VollumeStructure, Para
-from .fields import HashidField
-from hashids import Hashids
 
 
 class ParaSerializer(serializers.HyperlinkedModelSerializer):
@@ -18,13 +16,14 @@ class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = VollumeStructure
-        fields = ('id', 'author', 'story', 'order_in_story', 'para')
+        fields = ('id', 'author', 'vollume', 'page', 'para')
 
 
 class VollumeSerializer(serializers.HyperlinkedModelSerializer):
     # id = HashidField(read_only=True)
-    structure = VollumeStructureSerializer(many=True)
+    # structure = VollumeStructureSerializer(many=True, read_only=True)
 
     class Meta:
         model = Vollume
         fields = ('id', 'created', 'author', 'title', 'structure')
+        read_only_fields = ('structure',)

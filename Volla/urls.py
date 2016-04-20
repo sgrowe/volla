@@ -1,14 +1,13 @@
 from django.conf.urls import url, include
 from django.contrib import admin
 from rest_framework import routers
-from stories.views import VollumeViewSet, VollumeStructureViewSet, ParaViewSet
+from vollumes.views import VollumeViewSet, ParagraphViewSet
 from users.views import UserViewSet, get_current_user, login_view, logout_view
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'vollumes', VollumeViewSet)
-router.register(r'vollume-structures', VollumeStructureViewSet)
-router.register(r'paragraphs', ParaViewSet)
+router.register(r'paragraphs', ParagraphViewSet, base_name='paragraph')
 
 api_urls = router.urls
 
