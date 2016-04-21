@@ -128,6 +128,6 @@ REST_FRAMEWORK = {
 # Cross origin request headers
 # https://github.com/ottoyiu/django-cors-headers/
 
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = True if DEBUG else False
 
-# TODO: tighten down the cors headers
+CORS_ORIGIN_WHITELIST = ('api.volla.co',)
