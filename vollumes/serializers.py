@@ -3,7 +3,6 @@ from .models import Vollume, VollumeStructure, Para
 
 
 class ParaSerializer(serializers.HyperlinkedModelSerializer):
-    # id = HashidField(read_only=True)
 
     class Meta:
         model = Para
@@ -11,7 +10,6 @@ class ParaSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
-    # id = HashidField(read_only=True)
     para = ParaSerializer()
 
     class Meta:
@@ -20,8 +18,6 @@ class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class VollumeSerializer(serializers.HyperlinkedModelSerializer):
-    # id = HashidField(read_only=True)
-    # structure = VollumeStructureSerializer(many=True, read_only=True)
 
     class Meta:
         model = Vollume

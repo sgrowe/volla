@@ -1,19 +1,30 @@
-from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
+from django.db.transaction import atomic
 from django.http import Http404
-from rest_framework import viewsets
-from rest_framework.exceptions import ParseError, ValidationError
-from rest_framework.decorators import api_view
+from rest_framework import viewsets, status
+from rest_framework.exceptions import ValidationError, ParseError
+from rest_framework.decorators import api_view, detail_route
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer
-from .serializers import UserSerializer, LoginDataSerializer
+from .serializers import UserSerializer, LoginDataSerializer, CreateUserSerializer
 from django.utils.six import BytesIO
 from rest_framework.parsers import JSONParser
+from .models import User
 
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = (AllowAny,)
+
+    def create(self, request, *args, **kwargs):
+        serializer = CreateUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.create(serializer.validated_data)
+        user.save()
+        user = authenticate(username=user.username, password=serializer.data['password'])
+        login(request, user)
+        return Response(data=UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET"])

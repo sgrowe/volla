@@ -1,8 +1,8 @@
 from rest_framework.test import APITestCase
 from django.core.urlresolvers import reverse
 from rest_framework import status
-from django.contrib.auth.models import User
 from .models import Vollume
+from .models import User
 # from .fields import HashidAutoField
 #
 #
@@ -35,7 +35,7 @@ class VollumeApiTest(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         json = response.data
-        self.assertEqual(json['count'], len(json['results']))
+        self.assertEqual(len(json['results']), 1)
         self.assertEqual(json['results'][0]['title'], title)
 
     def test_anonymous_users_cant_create_vollumes(self):
