@@ -4,6 +4,22 @@ from rest_framework import status
 from users.models import User
 
 
+class UsersApiTest(APITestCase):
+    def test_email_not_in_results(self):
+        username = 'barry'
+        email = 'cool-barry@gmail.com'
+        user = User(username=username, email=email)
+        user.save()
+        response = self.client.get(reverse('user-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        json = response.data
+        self.assertEqual(len(json['results']), 1)
+        user_result = json['results'][0]
+        self.assertEqual(user_result['username'], username)
+        self.assertNotIn('email', user_result)
+        self.assertNotIn(email, str(json))
+
+
 class RegisterTest(APITestCase):
 
     def test_register(self):
@@ -151,7 +167,6 @@ class GetCurrentUserTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         user_data = response.data['results'][0]
         self.assertEqual(user_data['username'], username)
-        self.assertEqual(user_data['email'], email)
         self.assertIn('id', user_data)
         self.assertNotIn('password', user_data)
 
