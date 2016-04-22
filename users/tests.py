@@ -57,3 +57,13 @@ class RegisterApiTest(APITestCase):
         # Check that the user seems to be logged in:
         self.assertIn('_auth_user_id', self.client.session)
 
+    def test_common_passwords_are_rejected(self):
+        post_data = {
+            "username": "somedude",
+            "email": "dude@dude.com",
+            "password": "password"
+        }
+        response = self.client.post(reverse('user-list'), post_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['password'][0], 'This password is too common.')
+

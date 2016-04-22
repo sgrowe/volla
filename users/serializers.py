@@ -1,4 +1,7 @@
 from rest_framework import serializers
+from rest_framework import exceptions as restful_exceptions
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
 from vollumes.fields import HashidField
 from hashids import Hashids
 from .models import User
@@ -21,7 +24,12 @@ class CreateUserSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data['email']
         )
-        user.set_password(validated_data['password'])
+        try:
+            password = validated_data['password']
+            validate_password(password)
+        except ValidationError as error:
+            raise restful_exceptions.ValidationError(detail={'password': error.messages})
+        user.set_password(password)
         return user
 
 
