@@ -1,14 +1,10 @@
 from django.contrib.auth import authenticate, login, logout
-from django.db.transaction import atomic
-from django.http import Http404
 from rest_framework import viewsets, status
-from rest_framework.exceptions import ValidationError, ParseError
-from rest_framework.decorators import api_view, detail_route
+from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .serializers import UserSerializer, LoginDataSerializer, CreateUserSerializer
-from django.utils.six import BytesIO
-from rest_framework.parsers import JSONParser
 from .models import User
 
 
@@ -24,39 +20,31 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save()
         user = authenticate(username=user.username, password=serializer.data['password'])
         login(request, user)
-        return Response(data=UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(data=self.serializer_class(user).data, status=status.HTTP_201_CREATED)
 
+    @list_route(["POST"])
+    def logout(self, request):
+        logout(request)
+        return Response(data=self.serializer_class().data, status=status.HTTP_200_OK)
 
-@api_view(["GET"])
-def get_current_user(request):
-    if request.user.is_authenticated():
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
-    else:
-        raise Http404
+    @list_route(["POST"])
+    def login(self, request):
+        serializer = LoginDataSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        user = authenticate(username=data['username'], password=data['password'])
+        if user is None:
+            raise ValidationError(detail={'detail': ['Incorrect username or password.']})
+        if not user.is_active:
+            raise ValidationError(detail={'detail': ['Your account has been disabled. '
+                                                     'Please email us if you think a mistake has been made.']})
+        login(request, user)
+        return Response(data=self.serializer_class(user).data, status=status.HTTP_200_OK)
 
-
-@api_view(["POST"])
-def login_view(request):
-    print("login")
-    stream = BytesIO(request.body)
-    data = JSONParser().parse(stream)
-    serializer = LoginDataSerializer(data=data)
-    serializer.is_valid(raise_exception=True)
-    data = serializer.validated_data
-    user = authenticate(username=data['username'], password=data['password'])
-    if user is None:
-        print("Invalid credentials")
-        raise ValidationError("Invalid username or password.")
-    if not user.is_active:
-        print("Account inactive")
-        raise ValidationError("Account has not been activated yet.")
-    login(request, user)
-    response_serializer = UserSerializer(user)
-    return Response(response_serializer.data)
-
-
-@api_view(["POST"])
-def logout_view(request):
-    logout(request)
-    return Response()
+    @list_route(['GET'])
+    def logged_in(self, request):
+        # Get the currently logged in user
+        users = [request.user] if request.user.is_authenticated() else []
+        serializer = self.get_serializer(users, many=True)
+        self.paginate_queryset(users)  # initialise the paginator
+        return self.get_paginated_response(serializer.data)
