@@ -81,6 +81,19 @@ class RegisterTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['password'][0], 'This password is too common.')
 
+    def test_logged_in_users_cant_register(self):
+        user = User(username="bazza", email="gDwag@gmail.com")
+        user.save()
+        self.client.force_login(user)
+        post_data = {
+            "username": "somedude",
+            "email": "dude@dude.com",
+            "password": "theduuudeman123"
+        }
+        response = self.client.post(reverse('user-list'), post_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['detail'][0], "You are already logged in as bazza.")
+
 
 class LogoutTest(APITestCase):
     def test_logout(self):

@@ -15,6 +15,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         # Register a new user account
+        if request.user.is_authenticated():
+            raise ValidationError(detail={'detail': ['You are already logged in as {}.'.format(request.user.username)]})
         serializer = CreateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.create(serializer.validated_data)
