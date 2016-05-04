@@ -2,8 +2,6 @@ from rest_framework import serializers
 from rest_framework import exceptions as restful_exceptions
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from vollumes.fields import HashidField
-from hashids import Hashids
 from .models import User
 
 

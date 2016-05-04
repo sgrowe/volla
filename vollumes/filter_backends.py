@@ -11,7 +11,8 @@ def query_params_filter(param_name, field_name=None):
     :param field_name: The name of the field to filter by. This defaults to the param_name if not given.
     :return: filters.BaseFilterBackend
     """
-    field_name = field_name if field_name is not None else param_name
+    if field_name is None:
+        field_name = param_name
 
     class QueryParamsFilterBackend(filters.BaseFilterBackend):
 

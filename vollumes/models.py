@@ -27,6 +27,9 @@ class VollumeStructure(models.Model):
     def __str__(self):
         return "{} - page {}".format(self.vollume.title, self.page)
 
+    def get_absolute_url(self):
+        return reverse('paragraph-detail', kwargs={'pk': self.id})
+
 
 class Para(models.Model):
     text = models.TextField(max_length=500, validators=[MinLengthValidator(1)])

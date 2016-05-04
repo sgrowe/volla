@@ -18,6 +18,7 @@ class VollumeStructureSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class VollumeSerializer(serializers.HyperlinkedModelSerializer):
+    structure = serializers.HyperlinkedRelatedField(view_name='paragraph-detail', many=True, read_only=True)
 
     class Meta:
         model = Vollume
