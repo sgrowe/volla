@@ -1,5 +1,6 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from csrf_exempt_viewsets import CsrfExemptModelViewSet
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ParseError
@@ -32,7 +33,7 @@ def model_created_response(model):
     return Response(data=data, status=status.HTTP_201_CREATED)
 
 
-class VollumeViewSet(viewsets.ModelViewSet):
+class VollumeViewSet(CsrfExemptModelViewSet):
     queryset = Vollume.objects.all()
     serializer_class = VollumeSerializer
 
@@ -46,7 +47,7 @@ class VollumeViewSet(viewsets.ModelViewSet):
         return model_created_response(vollume)
 
 
-class ParagraphViewSet(viewsets.ModelViewSet):
+class ParagraphViewSet(CsrfExemptModelViewSet):
     queryset = VollumeStructure.objects.all()
     serializer_class = VollumeStructureSerializer
     filter_backends = (query_params_filter('story'), query_params_filter('page'))

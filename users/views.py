@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate, login, logout
+from csrf_exempt_viewsets import CsrfExemptModelViewSet
 from rest_framework import viewsets, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import detail_route, list_route
@@ -8,7 +9,7 @@ from .serializers import UserSerializer, LoginDataSerializer, CreateUserSerializ
 from .models import User
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(CsrfExemptModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (AllowAny,)

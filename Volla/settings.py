@@ -121,6 +121,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # REST framework
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': ('csrf_exempt_session_auth.CsrfExemptSessionAuthentication',),
     'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticatedOrReadOnly',),
     'PAGE_SIZE': 10
 }
@@ -131,3 +132,7 @@ REST_FRAMEWORK = {
 CORS_ORIGIN_ALLOW_ALL = True if DEBUG else False
 
 CORS_ORIGIN_WHITELIST = ('api.volla.co',)
+
+CORS_URLS_REGEX = r'^/api/.*$'
+
+CORS_ALLOW_CREDENTIALS = True
