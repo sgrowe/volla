@@ -1,13 +1,13 @@
 from django.conf.urls import url, include
 from django.contrib import admin
 from rest_framework import routers
-from vollumes.views import VollumeViewSet, ParagraphViewSet
+from vollumes.views import VollumeViewSet, VollumeChunkViewSet
 from users.views import UserViewSet
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'vollumes', VollumeViewSet)
-router.register(r'paragraphs', ParagraphViewSet, base_name='paragraph')
+router.register(r'paragraphs', VollumeChunkViewSet, base_name='paragraph')
 
 urlpatterns = [
     url(r'^api/', include(router.urls)),

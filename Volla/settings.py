@@ -1,4 +1,5 @@
 import os
+import re
 import dj_database_url
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -42,6 +43,7 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.common.BrokenLinkEmailsMiddleware',
 ]
 
 ROOT_URLCONF = 'Volla.urls'
@@ -136,3 +138,36 @@ CORS_ORIGIN_WHITELIST = ('api.volla.co',)
 CORS_URLS_REGEX = r'^/api/.*$'
 
 CORS_ALLOW_CREDENTIALS = True
+
+
+# Emails, TODO, see: file:///Users/sam/Downloads/django-docs-1.9-en/topics/email.html#smtp-backend
+
+if DEBUG:
+    # Don't send emails, print them to the console
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = ''
+
+EMAIL_HOST = ''
+
+EMAIL_HOST_USER = ''
+
+EMAIL_HOST_PASSWORD = ''
+
+
+# Error emails
+
+ADMINS = [
+    ('Sam', 'sgrowe@live.co.uk'),
+]
+
+MANAGERS = ADMINS
+
+IGNORABLE_404_URLS = [
+    re.compile(r'\.(php|cgi)$'),
+    re.compile(r'^/phpmyadmin/'),
+]
+
+# Caching
+
+USE_ETAGS = True
