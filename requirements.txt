@@ -1,7 +1,7 @@
 brotlipy==0.2.0
 cffi==1.5.2
 dj-database-url==0.4.1
-Django==1.9.5
+Django==1.9.7
 django-crispy-forms==1.6.0
 gunicorn==19.4.5
 hashids==1.1.0

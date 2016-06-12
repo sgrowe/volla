@@ -1,3 +1,10 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import Vollume, VollumeChunk
+
+
+class VollumeAdmin(admin.ModelAdmin):
+    fields = ('title', 'author', 'created')
+
+
+admin.site.register(Vollume, VollumeAdmin)

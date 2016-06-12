@@ -27,5 +27,5 @@ urlpatterns = [
     url('/login/', login, auth_form_view('Login', 'login'), name='login'),
     url('/logout/', logout, {'next_page': '/'}, name='logout'),
     # Admin
-    url('/super-secret-zone/admin', admin.site.urls),
+    url('/super-secret-zone/admin/', admin.site.urls),
 ]

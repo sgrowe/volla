@@ -17,7 +17,7 @@ SECRET_KEY = 'p-zelz*2j$k-n6(b#i^1n4pnx53^zjw@)nln^+yr4o%h84#g#)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('VOLLA_DEV') == 'TRUE'
 
-ALLOWED_HOSTS = ['api.volla.co']
+ALLOWED_HOSTS = ['api.volla.co', 'volla.co']
 
 # Application definition
 
@@ -65,12 +65,17 @@ if not DEBUG:
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+        ],
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug',
-                # 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
                 'django.contrib.messages.context_processors.messages',
             ],
             'loaders': template_loaders,
