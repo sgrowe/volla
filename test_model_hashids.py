@@ -1,5 +1,7 @@
 from unittest import TestCase
+from unittest.mock import Mock, patch
 from django.http import Http404
+from hashids import Hashids
 from model_hashids import HashidsMixin
 from utils_for_testing import get_random_int
 
@@ -40,14 +42,11 @@ class HashidsMixinTests(TestCase):
             with self.assertRaises(Http404):
                 test_class.decode_hashid_or_404(numbers)
 
-    def test_get_object_by_hashid_calls_decode_or_404_class_method(self):
-        class TestException(Exception):
-            pass
+    @patch('model_hashids.get_object_or_404')
+    def test_get_object_by_hashid_calls_decode_or_404_class_method(self, get_object_mock):
+        pk = 17
+        hashids = Hashids()
+        test_class = self.get_test_class(hashids)
+        test_class.get_by_hashid_or_404(hashids.encode(pk))
+        get_object_mock.assert_called_once_with(test_class, pk=pk)
 
-        class TestClass(HashidsMixin):
-            @classmethod
-            def decode_hashid_or_404(cls, hashid):
-                raise TestException
-
-        with self.assertRaises(TestException):
-            TestClass.get_by_hashid_or_404('sigj')

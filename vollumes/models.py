@@ -1,12 +1,20 @@
-from django.core.exceptions import ValidationError
 from django.db import models
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.core.urlresolvers import reverse
 from django.db.transaction import atomic
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from users.models import User
 from model_hashids import HashidsMixin
 from hashids import Hashids
+
+
+def get_paragraph_or_404(vollume_hashid, paragraph_hashid):
+    vollume_id = Vollume.decode_hashid_or_404(vollume_hashid)
+    paragraph_id = VollumeChunk.decode_hashid_or_404(paragraph_hashid)
+    query = VollumeChunk.objects.filter(vollume_id=vollume_id)
+    return get_object_or_404(query, id=paragraph_id)
 
 
 def create_validate_and_save_vollume(author, title, text):
@@ -38,16 +46,16 @@ class Vollume(HashidsMixin, models.Model):
     hashids = Hashids(salt='leeerooooy jeeenkinnnsss', min_length=4)
 
     def get_absolute_url(self):
-        return reverse('vollume-detail', kwargs={'pk': self.hashid})
+        return reverse('vollume', kwargs={'hashid': self.hashid})
 
     @property
-    def first_chunk(self):
+    def first_paragraph(self):
         return self.structure.get(parent=None)
 
 
 class VollumeChunk(HashidsMixin, models.Model):
     vollume = models.ForeignKey(Vollume, related_name='structure')
-    parent = models.ForeignKey('self', null=True, blank=True)
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
     author = models.ForeignKey(User, related_name='contributions')
     text = models.TextField(validators=[MinLengthValidator(1), MaxLengthValidator(500)])
 
@@ -57,25 +65,13 @@ class VollumeChunk(HashidsMixin, models.Model):
     hashids = Hashids(salt='Do or do not; there is no try.', min_length=4)
 
     def get_absolute_url(self):
-        return reverse('paragraph-detail', kwargs={'pk': self.hashid})
+        if self.parent is not None:
+            return self.parent.get_next_page_url()
+        else:
+            return self.vollume.get_absolute_url()
 
-    def clean(self):
-        super().clean()
-        self._ensure_vollume_has_only_one_first_para()
-        self._ensure_first_para_author_is_also_vollume_author()
-
-    def _ensure_vollume_has_only_one_first_para(self):
-        if self.parent is None:  # then this is the first para
-            try:
-                first_para = self.vollume.first_chunk
-                if first_para.id != self.id:
-                    raise ValidationError("A Vollume can't have more than one starting paragraph.")
-            except VollumeChunk.DoesNotExist:
-                pass
-
-    def _ensure_first_para_author_is_also_vollume_author(self):
-        if self.parent is None and self.vollume.author.id != self.author.id:
-            raise ValidationError("The author of the first paragraph of a Vollume must also be the Vollume author.")
+    def get_next_page_url(self):
+        return reverse('vollume-page', kwargs={'hashid': self.vollume.hashid, 'page': self.hashid})
 
     def add_child(self, author, text):
         child = VollumeChunk(
@@ -88,3 +84,19 @@ class VollumeChunk(HashidsMixin, models.Model):
         child.save()
         return child
 
+    def clean(self):
+        super().clean()
+        self._ensure_vollume_has_only_one_first_para()
+        self._ensure_first_para_author_is_also_vollume_author()
+
+    def _ensure_vollume_has_only_one_first_para(self):
+        if self.parent is None:  # then this is the first para
+            try:
+                if self.vollume.first_paragraph.id != self.id:
+                    raise ValidationError("A Vollume can't have more than one starting paragraph.")
+            except ObjectDoesNotExist:
+                pass
+
+    def _ensure_first_para_author_is_also_vollume_author(self):
+        if self.parent is None and self.vollume.author.id != self.author.id:
+            raise ValidationError("The author of the first paragraph of a Vollume must also be the Vollume author.")

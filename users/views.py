@@ -1,54 +1,28 @@
-from django.contrib.auth import authenticate, login, logout
-from csrf_exempt_viewsets import CsrfExemptModelViewSet
-from rest_framework import viewsets, status
-from rest_framework.exceptions import ValidationError
-from rest_framework.decorators import detail_route, list_route
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from .serializers import UserSerializer, LoginDataSerializer, CreateUserSerializer
-from .models import User
+from django.contrib.auth import authenticate, login
+from django.core.urlresolvers import reverse
+from django.shortcuts import render, redirect
+from users.forms import RegisterForm
 
 
-class UserViewSet(CsrfExemptModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = (AllowAny,)
+def set_logged_in_user(request, username, password):
+    user = authenticate(username=username, password=password)
+    login(request, user)
 
-    def create(self, request, *args, **kwargs):
-        # Register a new user account
-        if request.user.is_authenticated():
-            raise ValidationError(detail={'detail': ['You are already logged in as {}.'.format(request.user.username)]})
-        serializer = CreateUserSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.create(serializer.validated_data)
-        user.save()
-        user = authenticate(username=user.username, password=serializer.data['password'])
-        login(request, user)
-        return Response(data=self.serializer_class(user).data, status=status.HTTP_201_CREATED)
 
-    @list_route(["POST"])
-    def logout(self, request):
-        logout(request)
-        return Response(data=self.serializer_class().data, status=status.HTTP_200_OK)
-
-    @list_route(["POST"])
-    def login(self, request):
-        serializer = LoginDataSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        user = authenticate(username=data['username'], password=data['password'])
-        if user is None:
-            raise ValidationError(detail={'detail': ['Incorrect username or password.']})
-        if not user.is_active:
-            raise ValidationError(detail={'detail': ['Your account has been disabled. '
-                                                     'Please email us if you think a mistake has been made.']})
-        login(request, user)
-        return Response(data=self.serializer_class(user).data, status=status.HTTP_200_OK)
-
-    @list_route(['GET'])
-    def logged_in(self, request):
-        # Get the currently logged in user
-        users = [request.user] if request.user.is_authenticated() else []
-        serializer = self.get_serializer(users, many=True)
-        self.paginate_queryset(users)  # initialise the paginator
-        return self.get_paginated_response(serializer.data)
+def register(request):
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username, password = (form.cleaned_data[key] for key in ('username', 'password'))
+            set_logged_in_user(request, username, password)
+            return redirect(reverse('home'))
+    else:
+        form = RegisterForm()
+    context = {
+        'form': form,
+        'form_target': 'register',
+        'title': 'Sign up',
+        'submit_button_text': 'Sign up',
+    }
+    return render(request, 'form_view.html', context)

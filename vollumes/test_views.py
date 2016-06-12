@@ -1,245 +1,155 @@
-from rest_framework.test import APITestCase
+from utils_for_testing import WebTestCase, create_and_save_dummy_vollume, create_and_save_dummy_user
+from unittest.mock import patch
+import http_status_codes as status
 from django.core.urlresolvers import reverse
-from rest_framework import status
-from utils_for_testing import create_and_save_dummy_vollume, create_and_save_dummy_user
-from .models import Vollume, VollumeChunk
+from vollumes.models import Vollume, VollumeChunk
 
 
-class CreateVollumeApiTests(APITestCase):
+class HomePageTests(WebTestCase):
     def setUp(self):
-        self.url = reverse('vollume-list')
-        self.post_data = {
-            'title': 'Khdksjfhkd',
-            'text': 'lfdghflkgh',
-        }
+        self.url = reverse('home')
 
-    def send_request(self, assert_status=status.HTTP_201_CREATED):
-        response = self.client.post(self.url, self.post_data)
-        self.assertEqual(response.status_code, assert_status)
-        return response
+    def test_includes_login_link_when_logged_out(self):
+        response = self.get_request()
+        login_link = '<a href="{}">Login</a>'.format(reverse('login'))
+        self.assertContains(response, login_link, html=True)
 
-    def test_create_vollume_response_contains_vollume_id(self):
-        self.client.force_login(create_and_save_dummy_user())
-        response = self.send_request()
-        vollume = Vollume.objects.first()
-        self.assertEqual(response.data['id'], vollume.hashid)
-
-    def test_must_be_logged_in_to_create_vollume(self):
-        self.send_request(assert_status=status.HTTP_403_FORBIDDEN)
-
-    def test_create_vollume_saves_vollume_with_posted_title(self):
-        self.client.force_login(create_and_save_dummy_user())
-        response = self.send_request()
-        vollumes = Vollume.objects.all()
-        self.assertEqual(len(vollumes), 1)
-        self.assertEqual(vollumes[0].title, self.post_data['title'])
-
-    def test_create_vollume_saves_vollume_chunk_with_posted_text(self):
+    def test_includes_logout_link_when_logged_in(self):
         user = create_and_save_dummy_user()
         self.client.force_login(user)
-        response = self.send_request()
-        vollume_chunks = VollumeChunk.objects.all()
-        self.assertEqual(len(vollume_chunks), 1)
-        self.assertEqual(vollume_chunks[0].text, self.post_data['text'])
-
-    def test_title_required(self):
-        del self.post_data['title']
-        self.client.force_login(create_and_save_dummy_user())
-        response = self.send_request(assert_status=status.HTTP_400_BAD_REQUEST)
-        self.assertIn('title', response.data)
-
-    def test_title_max_length_enforced(self):
-        self.client.force_login(create_and_save_dummy_user())
-        self.post_data['title'] += 'a' * (Vollume._meta.get_field('title').max_length + 1)
-        response = self.send_request(assert_status=status.HTTP_400_BAD_REQUEST)
-        self.assertIn('title', response.data)
+        response = self.get_request()
+        logout_link = '<a href="{}">Logout</a>'.format(reverse('logout'))
+        self.assertContains(response, logout_link, html=True)
 
 
-class VollumesListApiTests(APITestCase):
+class CreateVollumeViewTests(WebTestCase):
     def setUp(self):
-        self.url = reverse('vollume-list')
+        self.url = reverse('new-vollume')
+        self.post_data = {
+            'title': "Check it out bruh",
+            'text': 'Here are a load of words...',
+        }
 
-    def get_response(self):
+    def test_must_be_logged_in_to_create_new_vollume(self):
+        login_url = '{}?next={}'.format(reverse('login'), self.url)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        return response
+        self.assertRedirects(response, login_url)
+        response = self.client.post(self.url, self.post_data)
+        self.assertRedirects(response, login_url)
 
-    def test_vollume_list_empty_when_no_vollumes(self):
-        response = self.get_response()
-        self.assertEqual(response.data['results'], [])
+    def test_redirects_to_created_vollume_on_success(self):
+        user = create_and_save_dummy_user()
+        self.client.force_login(user)
+        response = self.post_request()
+        self.assertEqual(Vollume.objects.count(), 1)
+        vollume = Vollume.objects.first()
+        self.assertRedirects(response, vollume.get_absolute_url(), fetch_redirect_response=False)
 
-    def test_vollume_list_mutiple_vollumes(self):
-        vollume_data = (
-            ('A brilliant Vollume', 'Some words to go in it', 'Og2Pro'),
-            ('greigj', 'fgsg', 'wrgiwr'),
-            ('dbsnyrnrsy', 'gsdgsdg', 'wgr;jer'),
+    def test_author_of_created_vollume_and_paragraph_is_logged_in_user(self):
+        user = create_and_save_dummy_user()
+        self.client.force_login(user)
+        self.post_request()
+        self.assertEqual(Vollume.objects.count(), 1)
+        self.assertEqual(VollumeChunk.objects.count(), 1)
+        vollume = Vollume.objects.first()
+        self.assertEqual(vollume.author, user)
+        self.assertEqual(vollume.first_paragraph.author, user)
+
+    def test_title_validation_errors_are_added_to_form(self):
+        user = create_and_save_dummy_user()
+        self.client.force_login(user)
+        self.post_data['title'] += "a" * Vollume._meta.get_field('title').max_length
+        response = self.post_request(status=status.HTTP_200_OK)
+        form = response.context['form']
+        self.assertTrue(form.has_error('title'))
+
+    def test_text_validation_errors_are_added_to_form(self):
+        user = create_and_save_dummy_user()
+        self.client.force_login(user)
+        self.post_data['text'] += 'a' * 500
+        response = self.post_request(status=status.HTTP_200_OK)
+        form = response.context['form']
+        self.assertTrue(form.has_error('text'))
+
+    def test_vollume_is_not_saved_if_paragraph_invalid(self):
+        user = create_and_save_dummy_user()
+        self.client.force_login(user)
+        del self.post_data['text']
+        self.post_request(status=status.HTTP_200_OK)
+        self.assertEqual(Vollume.objects.count(), 0)
+
+
+class VollumeStartPageTests(WebTestCase):
+    def test_view_uses_correct_vollume(self):
+        vollume = create_and_save_dummy_vollume()
+        response = self.get_request(vollume.get_absolute_url())
+        self.assertIn('paragraphs', response.context)
+        self.assertEqual(response.context['paragraphs'][0].pk, vollume.first_paragraph.pk)
+
+    def test_contains_first_paragraph_text(self):
+        vollume = create_and_save_dummy_vollume()
+        response = self.get_request(vollume.get_absolute_url())
+        self.assertContains(response, '<p>{}</p>'.format(vollume.first_paragraph.text), html=True)
+
+    def test_contains_link_to_next_page(self):
+        vollume = create_and_save_dummy_vollume()
+        second_para = vollume.first_paragraph.add_child(
+            vollume.author,
+            'Even more words'
         )
-        for title, text, username in vollume_data:
-            create_and_save_dummy_vollume(
-                title=title,
-                text=text,
-                author=create_and_save_dummy_user(username=username)
-            )
-        response = self.get_response()
-        self.assertEqual(len(response.data['results']), len(vollume_data))
+        url = 'href="{}"'.format(second_para.get_absolute_url())
+        response = self.get_request(vollume.get_absolute_url())
+        self.assertContains(response, url)
 
 
-class VollumeDetailApiTests(APITestCase):
-    def test_get_vollume_contains_paragraph_urls(self):
-        author = create_and_save_dummy_user()
-        vollume = create_and_save_dummy_vollume(
-            author=author
-        )
-        for para in ('kfhgfkjgh', 'adoiqr0298rewfn', 'rt24fjvlbem[23oq'):
-            chunk = VollumeChunk(author=author, text=para, parent=vollume.first_chunk, vollume=vollume)
-            chunk.save()
-        response = self.client.get(vollume.get_absolute_url())
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('paragraphs', response.data)
-        paras = response.data['paragraphs']
-        self.assertEqual(len(paras), 4)
-        for chunk_url in paras:
-            response = self.client.get(chunk_url)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-
-class CreateParagraphApiTests(APITestCase):
+class TestException(Exception):
     pass
 
-# class VollumeApiTest(APITestCase):
-#
-#     def test_vollumes_list(self):
-#         url = reverse('vollume-list')
-#         response = self.client.get(url)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         user = User(username="test user", email="test@volla.co")
-#         user.save()
-#         title = "nsapsdjf"
-#         vollume = Vollume(author=user, title=title)
-#         vollume.save()
-#         response = self.client.get(url)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         json = response.data
-#         self.assertEqual(len(json['results']), 1)
-#         first_result = json['results'][0]
-#         self.assertIn('id', first_result)
-#         self.assertIn('created', first_result)
-#         self.assertEqual(first_result['author'], user_url(user))
-#         self.assertEqual(first_result['title'], title)
-#         self.assertIn('structure', first_result)
-#
-#     def test_vollume_detail(self):
-#         author = User(username="test user", email="test@volla.co")
-#         author.save()
-#         title = "egjtpogjf"
-#         vollume = Vollume(author=author, title=title)
-#         vollume.save()
-#         url = reverse('vollume-detail', kwargs={'pk': vollume.id})
-#         para_a_text = "A great paragraph"
-#         para_a = Para(text=para_a_text)
-#         para_a.save()
-#         structure_a = VollumeChunk(vollume=vollume, author=author, page=1, para=para_a)
-#         structure_a.save()
-#         response = self.client.get(url)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         json = response.data
-#         self.assertIn('id', json)
-#         self.assertIn('created', json)
-#         self.assertEqual(json['author'], user_url(author))
-#         self.assertEqual(json['title'], title)
-#         self.assertEqual(len(json['structure']), 1)
-#         self.assertEqual(json['structure'][0], 'http://testserver' + structure_a.get_absolute_url())
-#
-#     def test_anonymous_users_cant_create_vollumes(self):
-#         post_data = {
-#             'author': "",
-#             'title': "A great story",
-#         }
-#         url = reverse('vollume-list')
-#         response = self.client.post(url, post_data, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#
-#     def test_create_vollume(self):
-#         author = User(username="test user", email="test@volla.co")
-#         author.save()
-#         self.client.force_login(author)
-#         url = reverse('vollume-list')
-#         response = self.client.post(url, {'bad_data': 'rghd'}, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-#         post_data = {
-#             'title': "A great story",
-#         }
-#         response = self.client.post(url, post_data, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#         self.assertEqual(len(Vollume.objects.all()), 1)
-#         self.assertEqual(response.data['url'], Vollume.objects.all()[0].get_absolute_url())
-#         response = self.client.get(response.data['url'])
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         json = response.data
-#         self.assertEqual(json['author'], user_url(author))
-#         self.assertEqual(json['title'], "A great story")
-#         self.assertEqual(len(json['structure']), 0)
-#
-#
-# class ParagraphApiTest(APITestCase):
-#
-#     def test_list_paragraphs(self):
-#         author = User(username="test user", email="test@volla.co")
-#         author.save()
-#         vollume = Vollume(author=author, title="A tale of two tests")
-#         vollume.save()
-#         para_a = Para(text="A great paragraph")
-#         para_a.save()
-#         structure_a = VollumeChunk(vollume=vollume, author=author, page=1, para=para_a)
-#         structure_a.save()
-#         response = self.client.get(reverse('paragraph-list'))
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#
-#     def test_anonymous_users_cant_create_paragraphs(self):
-#         author = User(username="test user", email="test@volla.co")
-#         author.save()
-#         vollume = Vollume(author=author, title="A tale of two tests")
-#         vollume.save()
-#         url = reverse('paragraph-list')
-#         post_data = {
-#             'vollume': vollume.get_absolute_url(),
-#             'page': 1,
-#             'text': "Some brilliant words!"
-#         }
-#         response = self.client.post(url, post_data, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#
-#     def test_create_paragraph(self):
-#         author = User(username="test user", email="test@volla.co")
-#         author.save()
-#         vollume = Vollume(author=author, title="A tale of two tests")
-#         vollume.save()
-#         url = reverse('paragraph-list')
-#         post_data = {
-#             'vollume': vollume.get_absolute_url(),
-#             'page': 1,
-#             'text': "Some brilliant words!"
-#         }
-#         self.client.force_login(author)
-#         response = self.client.post(url, post_data, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#         json = response.data
-#         self.assertEqual(json['page'], 1)
-#         self.assertEqual(json['author'], user_url(author))
-#         self.assertEqual(json['para']['text'], "Some brilliant words!")
-#
-#
-# class ApiFlowsTest(APITestCase):
-#     def create_vollume_with_paragraphs(self):
-#         author = User(username="test user", email="test@volla.co")
-#         author.save()
-#         self.client.force_login(author)
-#         post_data = {
-#             'title': "A great story",
-#         }
-#         response = self.client.post(reverse('vollume-list'), post_data, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#         json = response.data
-#         self.assertEqual(json['author'], user_url(author))
-#         self.assertEqual(json['title'], "A great story")
-#         self.assertEqual(len(json['structure']), 0)
+
+class VollumePageTests(WebTestCase):
+    @patch('vollumes.views.get_paragraph_or_404', side_effect=TestException)
+    def test_fetch_vollume_and_paragraph_by_hashid(self, get_parent_paragraph):
+        vollume_hashid = '4fj'
+        parent_hashid = 'fjgh40'
+        url = reverse('vollume-page', kwargs={'hashid': vollume_hashid, 'page': parent_hashid})
+        with self.assertRaises(TestException):
+            self.get_request(url)
+        get_parent_paragraph.assert_called_once_with(vollume_hashid, parent_hashid)
+
+    def test_shows_the_right_paragraphs(self):
+        vollume = create_and_save_dummy_vollume()
+        second_user = create_and_save_dummy_user(username='Wendy')
+        para_a = vollume.first_paragraph.add_child(
+            author=vollume.author,
+            text='Add on some extra words.'
+        )
+        para_b = vollume.first_paragraph.add_child(
+            author=second_user,
+            text="I'll add in a bit of extra stuff too!"
+        )
+        self.assertEqual(para_a.get_absolute_url(), para_b.get_absolute_url())
+        response = self.get_request(para_a.get_absolute_url())
+        paragraphs = response.context['paragraphs']
+        self.assertEqual(len(paragraphs), 2)
+        self.assertIn(para_a, paragraphs)
+        self.assertIn(para_b, paragraphs)
+
+    def test_contains_links_to_child_pages(self):
+        vollume = create_and_save_dummy_vollume()
+        second_user = create_and_save_dummy_user(username='Wendy')
+        para_a = vollume.first_paragraph.add_child(
+            author=second_user,
+            text='Add on some extra words.'
+        )
+        para_b = vollume.first_paragraph.add_child(
+            author=vollume.author,
+            text='Enough with all this writing'
+        )
+        next_page_para = para_a.add_child(
+            author=second_user,
+            text="I'll add in a bit of extra stuff too!"
+        )
+        response = self.get_request(para_a.get_absolute_url())
+        self.assertContains(response, vollume.first_paragraph.get_absolute_url())
+        self.assertContains(response, para_a.get_next_page_url())
+        self.assertContains(response, para_b.get_next_page_url())

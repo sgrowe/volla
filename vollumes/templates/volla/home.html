@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+    {% for vollume in vollumes %}
+        <p class="h4"><a href="{{ vollume.get_absolute_url }}">{{ vollume.title }}</a></p>
+        <p>{{ vollume.first_paragraph.text }}</p>
+    {% endfor %}
+
+{% endblock %}

@@ -1,9 +1,10 @@
 from unittest import mock
 from django.test import TestCase
+from django.http import Http404
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.utils import timezone
 from model_hashids import HashidsMixin
-from .models import Vollume, VollumeChunk, create_validate_and_save_vollume
+from .models import Vollume, VollumeChunk, create_validate_and_save_vollume, get_paragraph_or_404
 from utils_for_testing import create_and_save_dummy_user, create_and_save_dummy_vollume, get_random_int
 
 
@@ -24,12 +25,12 @@ class CreateVollumeHelperTests(TestCase):
         text = 'Text for the first paragraph'
         vollume = create_validate_and_save_vollume(author=user, title=title, text=text)
         # Check that the vollume and its first paragraph have been saved to the db
-        self.assertIsNotNone(vollume.first_chunk.id)
+        self.assertIsNotNone(vollume.first_paragraph.id)
         chunks = VollumeChunk.objects.all()
         self.assertEqual(len(chunks), 1)
         self.assertEqual(chunks[0].vollume.id, vollume.id)
 
-    def test_create_vollume_helper_does_not_save_on_validation_errors(self):
+    def test_create_vollume_helper_does_not_save_on_errors(self):
         test_data = (
             (None, 'This is the vollume title', "This is the text of the first paragraph"),
             (create_and_save_dummy_user(username='The author'), None, 'Another first para'),
@@ -46,7 +47,7 @@ class CreateVollumeHelperTests(TestCase):
         user = create_and_save_dummy_user()
         title = 'New vollume title'
         text = 'Text for the first paragraph'
-        vollume = create_validate_and_save_vollume(author=user, title=title, text=text)
+        create_validate_and_save_vollume(author=user, title=title, text=text)
         vollume_full_clean.assert_called_once_with()
 
     @mock.patch.object(VollumeChunk, 'full_clean')
@@ -54,8 +55,46 @@ class CreateVollumeHelperTests(TestCase):
         user = create_and_save_dummy_user()
         title = 'New vollume title'
         text = 'Text for the first paragraph'
-        vollume = create_validate_and_save_vollume(author=user, title=title, text=text)
+        create_validate_and_save_vollume(author=user, title=title, text=text)
         vollume_chunk_full_clean.assert_called_once_with()
+
+
+class GetParentParagraphTests(TestCase):
+    def setUp(self):
+        self.vollume = create_and_save_dummy_vollume()
+        self.child_paragraph = self.vollume.first_paragraph.add_child(
+            self.vollume.author,
+            'A whole load of words'
+        )
+
+    def test_raises_404_on_invalid_vollume_hashid(self):
+        bad_hashids = (
+            'fw45',
+            '',
+            '1',
+        )
+        for hashid in bad_hashids:
+            self.assertNotEqual(hashid, self.vollume.hashid, 'Test has bad data. A test hashid accidentally matches '
+                                                             'an actual hashid in the db: {}'.format(hashid))
+            with self.assertRaises(Http404):
+                get_paragraph_or_404(hashid, self.vollume.first_paragraph.hashid)
+
+    def test_raises_404_on_invalid_paragraph_hashid(self):
+        bad_hashids = (
+            'fw45',
+            '',
+            '1',
+        )
+        paragraph_hashids = [paragraph.hashid for paragraph in VollumeChunk.objects.all()]
+        for hashid in bad_hashids:
+            self.assertNotIn(hashid, paragraph_hashids, 'Test has bad data. A test hashid accidentally matches '
+                                                        'an actual hashid in the db: {}'.format(hashid))
+            with self.assertRaises(Http404):
+                get_paragraph_or_404(self.vollume.hashid, hashid)
+
+    def test_returns_parent_paragraph_model(self):
+        paragraph = get_paragraph_or_404(self.vollume.hashid, self.child_paragraph.hashid)
+        self.assertEqual(paragraph, self.child_paragraph)
 
 
 class VollumeTests(TestCase):
@@ -131,11 +170,16 @@ class VollumeTests(TestCase):
 
 
 class VollumeChunkTests(TestCase):
-    def test_vollume_chunk_url_contains_its_hashid(self):
-        vollume_chunk = create_and_save_dummy_vollume().first_chunk
-        for pk in (get_random_int() for _ in range(10)):
-            vollume_chunk.pk = pk
-            self.assertIn(vollume_chunk.hashid, vollume_chunk.get_absolute_url())
+    def test_url_contains_parent_hashid(self):
+        parent = create_and_save_dummy_vollume().first_paragraph
+        child = parent.add_child(parent.author, "Cool uri's don't change man...")
+        url = child.get_absolute_url()
+        self.assertIn(parent.hashid, url)
+        self.assertIn(child.vollume.hashid, url)
+
+    def test_url_of_root_paragraph_is_vollume_url(self):
+        vollume = create_and_save_dummy_vollume()
+        self.assertEqual(vollume.first_paragraph.get_absolute_url(), vollume.get_absolute_url())
 
     def test_one_vollume_cant_have_multiple_root_chunks(self):
         vollume = create_and_save_dummy_vollume()
@@ -149,9 +193,9 @@ class VollumeChunkTests(TestCase):
         error_messages = caught.exception.message_dict[NON_FIELD_ERRORS]
         self.assertIn("A Vollume can't have more than one starting paragraph.", error_messages)
 
-    def test_add_child(self):
+    def test_add_child_method(self):
         vollume = create_and_save_dummy_vollume()
-        new_chunk = vollume.first_chunk.add_child(
+        new_chunk = vollume.first_paragraph.add_child(
             author=create_and_save_dummy_user(username='Hi guys'),
             text="It don't matter really"
         )
@@ -196,7 +240,7 @@ class VollumeChunkTests(TestCase):
 
     def test_str_method_contains_vollume_title(self):
         vollume = create_and_save_dummy_vollume()
-        self.assertIn(vollume.title, str(vollume.first_chunk))
+        self.assertIn(vollume.title, str(vollume.first_paragraph))
 
     def test_vollume_uses_hashid_mixin(self):
         self.assertIsInstance(VollumeChunk(), HashidsMixin)
@@ -214,7 +258,16 @@ class VollumeChunkTests(TestCase):
             (4466, 'n0OD'),
             (7226, 'KRXd'),
         )
-        vollume_chunk = create_and_save_dummy_vollume().first_chunk
+        vollume_chunk = create_and_save_dummy_vollume().first_paragraph
         for pk, hashid in hashids:
             vollume_chunk.pk = pk
             self.assertEqual(vollume_chunk.hashid, hashid)
+
+    def test_next_page_url(self):
+        vollume = create_and_save_dummy_vollume()
+        parent_paragraph = vollume.first_paragraph
+        child = parent_paragraph.add_child(
+            author=vollume.author,
+            text='sjalfsrgbolr'
+        )
+        self.assertEqual(parent_paragraph.get_next_page_url(), child.get_absolute_url())

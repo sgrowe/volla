@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+    {% for paragraph in paragraphs %}
+        <p>{{ paragraph.text }}</p>
+
+        <p class="text-right">
+            <a href="{{ paragraph.get_next_page_url }}">Next <span aria-hidden="true">&rarr;</span></a>
+        </p>
+    {% endfor %}
+
+{% endblock %}

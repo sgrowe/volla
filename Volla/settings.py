@@ -3,6 +3,8 @@ import re
 import dj_database_url
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from django.core.urlresolvers import reverse_lazy
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -20,14 +22,13 @@ ALLOWED_HOSTS = ['api.volla.co']
 # Application definition
 
 INSTALLED_APPS = [
-    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',
+    'crispy_forms',
     'vollumes',
     'users',
 ]
@@ -48,23 +49,43 @@ MIDDLEWARE_CLASSES = [
 
 ROOT_URLCONF = 'Volla.urls'
 
+
+WSGI_APPLICATION = 'Volla.wsgi.application'
+
+
+template_loaders = [
+   'django.template.loaders.filesystem.Loader',
+   'django.template.loaders.app_directories.Loader',
+]
+if not DEBUG:
+    template_loaders = [
+        ('django.template.loaders.cached.Loader', template_loaders),
+    ]
+
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
-                'django.template.context_processors.request',
+                # 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'loaders': template_loaders,
         },
     },
 ]
 
-WSGI_APPLICATION = 'Volla.wsgi.application'
+
+# Crispy forms
+# http://django-crispy-forms.readthedocs.io/en/latest/index.html
+
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
+CRISPY_FAIL_SILENTLY = not DEBUG
 
 
 # Database
@@ -110,6 +131,9 @@ USE_L10N = True
 USE_TZ = True
 
 
+LOGIN_URL = reverse_lazy('login')
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
@@ -120,27 +144,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
-# REST framework
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ('csrf_exempt_session_auth.CsrfExemptSessionAuthentication',),
-    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticatedOrReadOnly',),
-    'PAGE_SIZE': 10
-}
-
-# Cross origin request headers
-# https://github.com/ottoyiu/django-cors-headers/
-
-CORS_ORIGIN_ALLOW_ALL = True if DEBUG else False
-
-CORS_ORIGIN_WHITELIST = ('api.volla.co',)
-
-CORS_URLS_REGEX = r'^/api/.*$'
-
-CORS_ALLOW_CREDENTIALS = True
-
-
-# Emails, TODO, see: file:///Users/sam/Downloads/django-docs-1.9-en/topics/email.html#smtp-backend
+# Emails
+# TODO, see: file:///Users/sam/Downloads/django-docs-1.9-en/topics/email.html#smtp-backend
 
 if DEBUG:
     # Don't send emails, print them to the console
@@ -167,6 +172,8 @@ IGNORABLE_404_URLS = [
     re.compile(r'\.(php|cgi)$'),
     re.compile(r'^/phpmyadmin/'),
 ]
+
+INTERNAL_IPS = ['127.0.0.1']
 
 # Caching
 

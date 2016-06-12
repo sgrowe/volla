@@ -1,185 +1,64 @@
-from rest_framework.test import APITestCase
+from unittest.mock import patch
+from utils_for_testing import WebTestCase
+from django.test import override_settings
 from django.core.urlresolvers import reverse
-from rest_framework import status
+from users.forms import RegisterForm
 from users.models import User
 
 
-class UsersApiTest(APITestCase):
-    def test_email_not_in_results(self):
-        username = 'barry'
-        email = 'cool-barry@gmail.com'
-        user = User(username=username, email=email)
-        user.save()
-        response = self.client.get(reverse('user-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        json = response.data
-        self.assertEqual(len(json['results']), 1)
-        user_result = json['results'][0]
-        self.assertEqual(user_result['username'], username)
-        self.assertNotIn('email', user_result)
-        self.assertNotIn(email, str(json))
+@override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
+class RegisterViewTests(WebTestCase):
+    def setUp(self):
+        self.url = reverse('register')
+        self.set_post_data('BillyBob43', 'billy@yeeehah.com', 'password123')
 
-
-class RegisterTest(APITestCase):
-
-    def test_register(self):
-        post_data = {
-            "username": "somedude",
-            "email": "dude@dude.com",
-            "password": "theduuudeman123",
-        }
-        response = self.client.post(reverse('user-list'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn('username', response.data)
-        self.assertIn('id', response.data)
-        self.assertNotIn('password', response.data)
-
-    def test_email_required_to_register(self):
-        post_data = {
-            "username": "somedude",
-            "password": "theduuudeman123",
-        }
-        response = self.client.post(reverse('user-list'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['email'][0], 'This field is required.')
-
-    def test_password_required_to_register(self):
-        post_data = {
-            "username": "somedude",
-            "email": "dude@dude.com",
-        }
-        response = self.client.post(reverse('user-list'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['password'][0], 'This field is required.')
-        post_data = {
-            "username": "somedude",
-            "email": "dude@dude.com",
-            "password": ""
-        }
-        response = self.client.post(reverse('user-list'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['password'][0], 'This field may not be blank.')
-
-    def test_user_is_logged_in_after_registration(self):
-        post_data = {
-            "username": "somedude",
-            "email": "dude@dude.com",
-            "password": "theduuudeman123",
-        }
-        response = self.client.post(reverse('user-list'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        # Check that the user seems to be logged in:
-        self.assertIn('_auth_user_id', self.client.session)
-
-    def test_common_passwords_are_rejected(self):
-        post_data = {
-            "username": "somedude",
-            "email": "dude@dude.com",
-            "password": "password"
-        }
-        response = self.client.post(reverse('user-list'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['password'][0], 'This password is too common.')
-
-    def test_logged_in_users_cant_register(self):
-        user = User(username="bazza", email="gDwag@gmail.com")
-        user.save()
-        self.client.force_login(user)
-        post_data = {
-            "username": "somedude",
-            "email": "dude@dude.com",
-            "password": "theduuudeman123"
-        }
-        response = self.client.post(reverse('user-list'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['detail'][0], "You are already logged in as bazza.")
-
-
-class LogoutTest(APITestCase):
-    def test_logout(self):
-        user = User(username="not for long", email="lskgjn@email.com")
-        user.save()
-        self.client.force_login(user)
-        # Check that the user seems to be logged in:
-        self.assertIn('_auth_user_id', self.client.session)
-        response = self.client.post(reverse('user-logout'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Check that the user seems to be logged out:
-        self.assertNotIn('_auth_user_id', self.client.session)
-
-
-class LoginTest(APITestCase):
-    def test_login(self):
-        username = "yo@thebro"
-        password = "never gonna guess it"
-        user = User(username=username, email="lskgjn@email.com")
-        user.set_password(password)
-        user.save()
-        post_data = {
+    def set_post_data(self, username, email, password):
+        self.post_data = {
             'username': username,
-            'password': password
+            'email': email,
+            'password': password,
+            'password_repeat': password,
         }
-        response = self.client.post(reverse('user-login'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('_auth_user_id', self.client.session)
 
-    def test_login_attempt_fail_with_wrong_password(self):
-        username = "yo@thebro"
-        password = "never gonna guess it"
-        user = User(username=username, email="lskgjn@email.com")
-        user.set_password(password)
-        user.save()
-        post_data = {
-            'username': username,
-            'password': "this aint right"
-        }
-        response = self.client.post(reverse('user-login'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['detail'][0], 'Incorrect username or password.')
-        self.assertNotIn('_auth_user_id', self.client.session)
+    def test_view_displays_register_form(self):
+        response = self.get_request()
+        self.assertIsInstance(response.context['form'], RegisterForm)
 
-    def test_login_attempt_fails_with_no_password(self):
-        username = "yo@thebro"
-        password = "never gonna guess it"
-        user = User(username=username, email="lskgjn@email.com")
-        user.set_password(password)
-        user.save()
-        post_data = {
-            'username': username
-        }
-        response = self.client.post(reverse('user-login'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['password'][0], 'This field is required.')
-        self.assertNotIn('_auth_user_id', self.client.session)
-        post_data = {
-            'username': username,
-            'password': ''
-        }
-        response = self.client.post(reverse('user-login'), post_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['password'][0], 'This field may not be blank.')
-        self.assertNotIn('_auth_user_id', self.client.session)
+    @patch('users.views.RegisterForm')
+    def test_view_uses_register_form(self, form):
+        self.get_request()
+        form.assert_called_once_with()
 
+    @patch('users.views.RegisterForm.is_valid')
+    def test_view_uses_register_form_on_post(self, is_valid):
+        self.set_post_data('billy_bob_beats', 'billybob@yahoo.com',  'guns4lief')
+        self.post_request()
+        is_valid.assert_called_once_with()
 
-class GetCurrentUserTest(APITestCase):
-    def test_user_is_logged_out(self):
-        response = self.client.get(reverse('user-logged-in'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        json = response.data
-        self.assertEqual(len(json['results']), 0)
+    def test_submit_url_is_register_url(self):
+        response = self.get_request()
+        self.assertContains(response, 'action="{}"'.format(self.url))
 
-    def test_user_is_logged_in(self):
-        username = "yo@thebro"
-        email = "lskgjn@email.com"
-        password = "never gonna guess it"
-        user = User(username=username, email=email)
-        user.set_password(password)
-        user.save()
-        self.client.force_login(user)
-        response = self.client.get(reverse('user-logged-in'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        user_data = response.data['results'][0]
-        self.assertEqual(user_data['username'], username)
-        self.assertIn('id', user_data)
-        self.assertNotIn('password', user_data)
+    def test_creates_new_user_on_register(self):
+        username = 'BillyBob43'
+        email = 'billy@yeeehah.com'
+        password = 'password123'
+        self.set_post_data(username, email, password)
+        self.post_request()
+        self.assertEqual(User.objects.count(), 1)
+        user = User.objects.get()
+        self.assertEqual(user.username, username)
+        self.assertEqual(user.email, email)
+        self.assertTrue(user.check_password(password))
+        self.assertTrue(user.is_active)
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
 
+    def test_user_is_logged_in_after_register(self):
+        self.post_request()
+        user = User.objects.get()
+        self.assertEqual(int(self.client.session['_auth_user_id']), user.pk)
+
+    def test_redirected_to_home_page_after_register(self):
+        response = self.post_request()
+        self.assertRedirects(response, reverse('home'))
