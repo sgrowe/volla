@@ -1,17 +1,64 @@
-{% extends 'volla/vollume_start.html' %}
+{% extends 'base.html' %}
 
 {% load crispy_forms_tags %}
 
 {% block content %}
-    <p><a href="{{ prev_page_url }}"><span aria-hidden="true">&larr;</span> Back</a></p>
+    <div class="text-container">
 
-    {{ block.super }}
+        {% if title %}
+            <h1 class="title">
+                <a href="{{ vollume.get_absolute_url }}">{{ vollume.title }}</a>
+            </h1>
+        {% endif %}
 
-    <h3>Add an alternative paragraph</h3>
-    <form method="post" action="{{ form_url }}">
-        {% csrf_token %}
-        {{ form | crispy }}
-        <button type="submit" class="btn btn-default">Post</button>
-    </form>
+        {% for paragraph in paragraphs %}
+            <p class="margin-top">{{ paragraph.text }}</p>
+
+            <div class="small margin-top pad-top stylish-top-border ghostly-fade">
+                <div class="flex-row">
+                    <div class="ghost">
+                        <p><a href="{{ paragraph.author.get_absolute_url }}">{{ paragraph.author.username }}</a></p>
+                    </div>
+
+
+                    <p class="text-right">
+                        <a href="{{ paragraph.get_next_page_url }}">Continue <span aria-hidden="true">&rarr;</span></a>
+                    </p>
+                </div>
+            </div>
+
+        {% empty %}
+            <p class="margin-top"><strong>That's the end of the story so far.</strong></p>
+        {% endfor %}
+
+        {% if form %}
+            {% if user.is_authenticated %}
+
+                <div class="ghostly-fade">
+                    {% if paragraphs %}
+                        <div class="ghost section-break">
+                            <p class="italic margin-top">Suggest a different turn of events:</p>
+                            <p class="small margin-top">Want to take the story in a different direction? Write it down below:</p>
+                        </div>
+                    {% else %}
+                        <div class="pad-top">
+                            <p>Why not continue the story yourself by writing what happens next below:</p>
+                        </div>
+                    {% endif %}
+
+                    <form class="main-form small no-labels margin-top" method="post" action="{{ form_submit_url }}">
+                        {% csrf_token %}
+                        {{ form | crispy }}
+                        <button type="submit" class="btn btn-default">Add</button>
+                    </form>
+                </div>
+
+            {% else %}
+
+
+            {% endif %}
+        {% endif %}
+
+    </div>
 
 {% endblock %}

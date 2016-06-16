@@ -33,6 +33,9 @@ def create_and_save_dummy_vollume(**kwargs):
 
 
 class WebTestCase(TestCase):
+    url = ''
+    post_data = {}
+
     def post_request(self, url=None, data=None, status=status.HTTP_302_FOUND):
         url = url or self.url
         data = data or self.post_data

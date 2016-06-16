@@ -8,7 +8,6 @@ from form_helpers import show_validation_errors_in_form
 def home(request):
     context = {
         'whole-title': 'Volla - Social story writing',
-        'title': 'Latest Vollumes',
         'vollumes': Vollume.objects.all(),
     }
     return render(request, 'volla/home.html', context)
@@ -37,7 +36,7 @@ def new_vollume(request):
         'form': form,
         'form_target': 'new-vollume',
         'submit_button_text': 'Create',
-        'title': 'Write a new vollume',
+        'title': 'Start a new vollume',
     }
     return render(request, 'form_view.html', context)
 
@@ -45,10 +44,11 @@ def new_vollume(request):
 def vollume_start(request, hashid):
     vollume = Vollume.get_by_hashid_or_404(hashid)
     context = {
+        'vollume': vollume,
         'title': vollume.title,
         'paragraphs': [vollume.first_paragraph],
     }
-    return render(request, 'volla/vollume_start.html', context)
+    return render(request, 'volla/vollume.html', context)
 
 
 class NewParagraphForm(forms.Form):
@@ -81,10 +81,10 @@ def vollume_page(request, hashid, page):
     if not isinstance(form_or_redirect, NewParagraphForm):
         return form_or_redirect
     context = {
+        'vollume': parent_paragraph.vollume,
         'title': parent_paragraph.vollume.title,
         'paragraphs': parent_paragraph.children.all(),
-        'prev_page_url': parent_paragraph.get_absolute_url(),
         'form': form_or_redirect,
-        'form_url': request.path,
+        'form_submit_url': request.path,
     }
     return render(request, 'volla/vollume.html', context)

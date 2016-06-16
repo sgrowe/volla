@@ -1,0 +1,64 @@
+@import typography
+@import layout
+@import forms
+
+
+body
+    text-rendering: optimizeLegibility
+
+
+.ghostly-fade
+    .ghost
+        opacity: 0.35
+        transition: 0.5s ease-in-out opacity
+
+    &:hover .ghost
+        opacity: 1
+        transition-timing-function: ease-out
+
+
+.background
+    border: 1px solid black
+    border-radius: 3px
+
+
+.stylish-top-border
+    position: relative
+
+    &:after
+        content: ''
+        display: block
+        width: 30%
+        position: absolute
+        top: 0px
+        left: 0
+        border: 1px solid black
+        opacity: 0.5
+
+
+
+
+
+.asteriskField
+    display: none
+
+
+.no-labels
+    label
+        display: none
+
+
+a
+    text-decoration: none
+    color: inherit
+
+    &:hover
+        text-decoration: underline
+
+
+.item-list
+    list-style-type: none
+
+
+.text-right
+    text-align: right

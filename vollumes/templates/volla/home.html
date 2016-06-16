@@ -2,10 +2,26 @@
 
 
 {% block content %}
+    <div class="text-container less-top-space">
 
-    {% for vollume in vollumes %}
-        <p class="h4"><a href="{{ vollume.get_absolute_url }}">{{ vollume.title }}</a></p>
-        <p>{{ vollume.first_paragraph.text }}</p>
-    {% endfor %}
+        {% if user.is_anonymous %}
+            <div class="background pad">
+                <p>
+                    Volla is a place for social story writing; where people work together to create tales that are imaginative,
+                    funny and unique.
+                </p>
+            </div>
+        {% endif %}
+
+        <h1 class="large italic margin-top bottom-border">Latest Vollumes</h1>
+
+        {% for vollume in vollumes %}
+            <div class="section-break">
+                <p class="bold"><a href="{{ vollume.get_absolute_url }}">{{ vollume.title }}</a></p>
+                <p class="pad-top slight-indent">{{ vollume.first_paragraph.text }}</p>
+            </div>
+        {% endfor %}
+
+    </div>
 
 {% endblock %}
