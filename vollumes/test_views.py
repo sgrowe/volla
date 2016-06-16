@@ -89,7 +89,7 @@ class VollumeStartPageTests(WebTestCase):
     def test_contains_first_paragraph_text(self):
         vollume = create_and_save_dummy_vollume()
         response = self.get_request(vollume.get_absolute_url())
-        self.assertContains(response, '<p>{}</p>'.format(vollume.first_paragraph.text), html=True)
+        self.assertContains(response, '{}'.format(vollume.first_paragraph.text))
 
     def test_contains_link_to_next_page(self):
         vollume = create_and_save_dummy_vollume()
