@@ -25,4 +25,4 @@ def register(request):
         'title': 'Sign up',
         'submit_button_text': 'Sign up',
     }
-    return render(request, 'form_view.html', context)
+    return render(request, 'volla/form_view.html', context)

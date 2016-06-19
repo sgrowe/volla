@@ -7,7 +7,7 @@ from users.views import register
 
 def auth_form_view(title, target, submit_button_text=None):
     return {
-        'template_name': 'form_view.html',
+        'template_name': 'volla/form_view.html',
         'extra_context': {
             'title': title,
             'form_target': target,

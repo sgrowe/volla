@@ -10,7 +10,7 @@ def home(request):
         'whole-title': 'Volla - Social story writing',
         'vollumes': Vollume.objects.all(),
     }
-    return render(request, 'volla/home.html', context)
+    return render(request, 'vollumes/home.html', context)
 
 
 class CreateVollumeForm(forms.Form):
@@ -38,7 +38,7 @@ def new_vollume(request):
         'submit_button_text': 'Create',
         'title': 'Start a new vollume',
     }
-    return render(request, 'form_view.html', context)
+    return render(request, 'volla/form_view.html', context)
 
 
 def vollume_start(request, hashid):
@@ -48,7 +48,7 @@ def vollume_start(request, hashid):
         'title': vollume.title,
         'paragraphs': [vollume.first_paragraph],
     }
-    return render(request, 'volla/vollume.html', context)
+    return render(request, 'vollumes/vollume.html', context)
 
 
 class NewParagraphForm(forms.Form):
@@ -87,4 +87,4 @@ def vollume_page(request, hashid, page):
         'form': form_or_redirect,
         'form_submit_url': request.path,
     }
-    return render(request, 'volla/vollume.html', context)
+    return render(request, 'vollumes/vollume.html', context)

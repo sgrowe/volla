@@ -72,15 +72,14 @@ if not DEBUG:
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': (
-            os.path.join(BASE_DIR, 'templates'),
-        ),
+        'DIRS': (),
         'OPTIONS': {
             'context_processors': (
                 'django.contrib.auth.context_processors.auth',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.i18n',
                 'django.template.context_processors.media',
+                'django.template.context_processors.request',
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
                 'django.contrib.messages.context_processors.messages',
@@ -188,6 +187,9 @@ EMAIL_HOST_PASSWORD = '5c30e0406fae44e1f4bddfe3f580d91bde64862f'
 
 
 # Error emails
+
+
+SERVER_EMAIL = 'errors@volla.co'
 
 
 ADMINS = (

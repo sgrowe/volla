@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'volla/base.html' %}
 
 {% load crispy_forms_tags %}
 
@@ -10,6 +10,12 @@
         <form class="main-form" method="post" action="{% url form_target %}">
             {% csrf_token %}
             {{ form | crispy }}
+
+            {% if next %}
+                {% comment %} For the auth views: {% endcomment %}
+                <input type="hidden" name="next" value="{{ next }}" />
+            {% endif %}
+
             <button type="submit" class="btn btn-default">{{ submit_button_text }}</button>
         </form>
 

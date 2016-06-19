@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'volla/base.html' %}
 
 {% load crispy_forms_tags %}
 
@@ -12,6 +12,7 @@
         {% endif %}
 
         {% for paragraph in paragraphs %}
+
             <p class="margin-top">{{ paragraph.text }}</p>
 
             <div class="small margin-top pad-top stylish-top-border ghostly-fade">
@@ -28,7 +29,9 @@
             </div>
 
         {% empty %}
+
             <p class="margin-top"><strong>That's the end of the story so far.</strong></p>
+
         {% endfor %}
 
         {% if form %}
@@ -39,7 +42,10 @@
                         {% if paragraphs %}
                             <div class="section-break">
                                 <p class="italic margin-top">Suggest a different turn of events:</p>
-                                <p class="small margin-top">Want to take the story in a different direction? Write it down below:</p>
+                                <p class="small margin-top">
+                                    Want to take the story in a different direction?
+                                    Write it down below:
+                                </p>
                             </div>
                         {% else %}
                             <div class="pad-top">
@@ -57,6 +63,10 @@
 
             {% else %}
 
+                <p class="margin-top">
+                    <a href="{% url 'login' %}?next={{ request.path }}">Login</a> or
+                    <a href="{% url 'register' %}?next={{ request.path }}">sign up</a> to continue the story yourself.
+                </p>
 
             {% endif %}
         {% endif %}

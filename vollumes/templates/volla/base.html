@@ -1,5 +1,6 @@
 {% spaceless %}
 {% load static %}
+{% load debug_tools %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,13 +30,13 @@
             <p class="site-title"><a href="{% url 'home' %}">Volla</a></p>
         </div>
 
-        <div class="row small ghost">
+        <div class="small row ghost">
             {% if user.is_authenticated %}
                 <p><a href="{% url 'new-vollume' %}">New Vollume</a></p>
-                <p><a href="{% url 'logout' %}">Logout</a></p>
+                <p><a href="{% url 'logout' %}?next={{ request.path }}">Logout</a></p>
             {% else %}
-                <p><a href="{% url 'login' %}">Login</a></p>
-                <p><a href="{% url 'register' %}">Sign up</a></p>
+                <p><a href="{% url 'login' %}?next={{ request.path }}">Login</a></p>
+                <p><a href="{% url 'register' %}?next={{ request.path }}">Sign up</a></p>
             {% endif %}
         </div>
 
@@ -48,7 +49,7 @@
     <!--
         {% for query in sql_queries %}
             Time: {{ query.time }}
-            Sql: {{ query.sql }}
+            Sql: {{ query.sql | escape_angle_brackets_only }}
 
         {% endfor %}
      -->
