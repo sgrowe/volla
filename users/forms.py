@@ -12,6 +12,8 @@ class RegisterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, validators=[validate_password])
     password_repeat = forms.CharField(widget=forms.PasswordInput)
 
+    sensitive_parameters = ('password', 'password_repeat')
+
     def clean(self):
         cleaned_data = super().clean()
         self.ensure_password_fields_match(cleaned_data)

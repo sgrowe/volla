@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate, login
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
+from django.views.decorators.debug import sensitive_variables, sensitive_post_parameters
 from users.forms import RegisterForm
 
 
@@ -9,6 +10,8 @@ def set_logged_in_user(request, username, password):
     login(request, user)
 
 
+@sensitive_post_parameters(*RegisterForm.sensitive_parameters)
+@sensitive_variables('password')
 def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
