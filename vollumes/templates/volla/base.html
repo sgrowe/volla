@@ -6,6 +6,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     {% if whole_title %}
         <title>{{ whole_title }}</title>
@@ -15,11 +16,10 @@
         <title>Volla</title>
     {% endif %}
 
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href='https://fonts.googleapis.com/css?family=Lora:400,400italic,700' rel='stylesheet' type='text/css'>
     <link href="{% static 'css/styles.css' %}" rel="stylesheet">
 
-    {% block head %}
+    {% block meta %}
 
     {% endblock %}
 

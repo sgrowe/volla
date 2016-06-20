@@ -4,29 +4,31 @@
 
     <div class="text-container">
 
-        <h1 class="bold">{{ user.username }}</h1>
+        <h1 class="large italic">User: <span class="no-italic">{{ user.username }}</span></h1>
 
-        {% with user.vollumes.all as vollumes %}
+        <div class="section-break">
 
-            {% if vollumes %}
+            {% with user.vollumes.all as vollumes %}
 
-                <h2 class="italic margin-top">Vollumes started by {{ user.username }}:</h2>
+                {% if vollumes %}
 
-                <div class="margin-top">
+                    <h2 class="italic">Vollumes started by {{ user.username }}</h2>
 
                     {% for vollume in vollumes %}
-                        <p><a href="{{ vollume.get_absolute_url }}">{{ vollume.title }}</a></p>
+
+                        <p class="margin-top"><a href="{{ vollume.get_absolute_url }}">{{ vollume.title }}</a></p>
+
                     {% endfor %}
 
-                </div>
+                {% else %}
 
-            {% else %}
+                    <p>{{ user.username }} hasn't created any vollumes yet.</p>
 
-                <p>{{ user.username }} hasn't created any vollumes yet.</p>
+                {% endif %}
 
-            {% endif %}
+            {% endwith %}
 
-        {% endwith %}
+        </div>
 
     </div>
 

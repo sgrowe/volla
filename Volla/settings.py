@@ -163,9 +163,10 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Emails
 
-
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' \
-    if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 
 DEFAULT_FROM_EMAIL = 'support@volla.co'
@@ -174,16 +175,16 @@ DEFAULT_FROM_EMAIL = 'support@volla.co'
 EMAIL_HOST = 'smtp.sparkpostmail.com'
 
 
-EMAIL_PORT = 587
-
-
-EMAIL_USE_TLS = True
-
-
 EMAIL_HOST_USER = 'SMTP_Injection'
 
 
 EMAIL_HOST_PASSWORD = '5c30e0406fae44e1f4bddfe3f580d91bde64862f'
+
+
+EMAIL_PORT = 587
+
+
+EMAIL_USE_TLS = True
 
 
 # Error emails
