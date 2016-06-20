@@ -1,0 +1,33 @@
+{% extends 'volla/base.html' %}
+
+{% block content %}
+
+    <div class="text-container">
+
+        <h1 class="bold">{{ user.username }}</h1>
+
+        {% with user.vollumes.all as vollumes %}
+
+            {% if vollumes %}
+
+                <h2 class="italic margin-top">Vollumes started by {{ user.username }}:</h2>
+
+                <div class="margin-top">
+
+                    {% for vollume in vollumes %}
+                        <p><a href="{{ vollume.get_absolute_url }}">{{ vollume.title }}</a></p>
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <p>{{ user.username }} hasn't created any vollumes yet.</p>
+
+            {% endif %}
+
+        {% endwith %}
+
+    </div>
+
+{% endblock %}

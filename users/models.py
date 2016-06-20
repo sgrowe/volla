@@ -2,12 +2,15 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin, UserManager
 from django.core import validators
 from django.core.mail import send_mail
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from hashids import Hashids
+from model_hashids import HashidsMixin
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(HashidsMixin, AbstractBaseUser, PermissionsMixin):
     """
     An abstract base class implementing a fully featured User model with
     admin-compliant permissions.
@@ -54,6 +57,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = _('user')
         verbose_name_plural = _('users')
 
+    hashids = Hashids(salt="What are you doing, Dave?", min_length=4)
+
     def get_full_name(self):
         return self.username
 
@@ -65,3 +70,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         Sends an email to this User.
         """
         send_mail(subject, message, from_email, [self.email], **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('user', kwargs={'user_id': self.hashid})

@@ -46,7 +46,7 @@ class Vollume(HashidsMixin, models.Model):
     hashids = Hashids(salt='leeerooooy jeeenkinnnsss', min_length=4)
 
     def get_absolute_url(self):
-        return reverse('vollume', kwargs={'hashid': self.hashid})
+        return reverse('vollume', kwargs={'vollume_id': self.hashid})
 
     @property
     def first_paragraph(self):
@@ -71,7 +71,7 @@ class VollumeChunk(HashidsMixin, models.Model):
             return self.vollume.get_absolute_url()
 
     def get_next_page_url(self):
-        return reverse('vollume-page', kwargs={'hashid': self.vollume.hashid, 'page': self.hashid})
+        return reverse('vollume-page', kwargs={'vollume_id': self.vollume.hashid, 'paragraph_id': self.hashid})
 
     def add_child(self, author, text):
         child = VollumeChunk(

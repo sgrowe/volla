@@ -16,7 +16,7 @@ class SimpleUrlTests(TestCase):
         self.assertEqual(match.kwargs, {'id': '47', 'title': 'loads-of-info'})
         self.assertEqual(match.args, ())
 
-    @patch('simple_urls.resolvers.url', return_value=sentinel.resolver)
+    @patch('simple_urls.resolvers._django_url', return_value=sentinel.resolver)
     @patch('simple_urls.resolvers._construct_regex', return_value=sentinel.regex)
     def test_constructed_regex_is_passed_to_django_url(self, construct_regex, django_url):
         view = Mock()

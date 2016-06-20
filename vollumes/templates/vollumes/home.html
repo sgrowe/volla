@@ -5,10 +5,13 @@
     <div class="text-container less-top-space">
 
         {% if user.is_anonymous %}
-            <div class="background pad">
+            <div class="background pad paragraphs">
                 <p>
                     Volla is a place for social story writing; where people work together to create tales that are imaginative,
                     funny and unique.
+                </p>
+                <p>
+                    <a href="{% url 'welcome-tour' %}">Find out more &rarr;</a>
                 </p>
             </div>
         {% endif %}

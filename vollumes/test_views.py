@@ -1,8 +1,13 @@
+from django.core.exceptions import ValidationError
 from utils_for_testing import WebTestCase, create_and_save_dummy_vollume, create_and_save_dummy_user
-from unittest.mock import patch
+from django.test import TestCase, RequestFactory
+from unittest.mock import patch, Mock
+from django.contrib.auth.models import AnonymousUser
+from django.http import HttpResponseRedirect
 import http_status_codes as status
 from django.core.urlresolvers import reverse
 from vollumes.models import Vollume, VollumeChunk
+from vollumes.views import handle_new_paragraph_form, vollume_page, NewParagraphForm, CreateVollumeForm
 
 
 class HomePageTests(WebTestCase):
@@ -11,15 +16,22 @@ class HomePageTests(WebTestCase):
 
     def test_includes_login_link_when_logged_out(self):
         response = self.get_request()
-        login_link = '<a href="{}">Login</a>'.format(reverse('login'))
+        login_link = '<a href="{}?next={}">Login</a>'.format(reverse('login'), self.url)
         self.assertContains(response, login_link, html=True)
 
     def test_includes_logout_link_when_logged_in(self):
         user = create_and_save_dummy_user()
         self.client.force_login(user)
         response = self.get_request()
-        logout_link = '<a href="{}">Logout</a>'.format(reverse('logout'))
+        logout_link = '<a href="{}?next={}">Logout</a>'.format(reverse('logout'), self.url)
         self.assertContains(response, logout_link, html=True)
+
+
+class WelcomePageTests(TestCase):
+    def test_returns_valid(self):
+        url = reverse('welcome-tour')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class CreateVollumeViewTests(WebTestCase):
@@ -55,28 +67,14 @@ class CreateVollumeViewTests(WebTestCase):
         self.assertEqual(vollume.author, user)
         self.assertEqual(vollume.first_paragraph.author, user)
 
-    def test_title_validation_errors_are_added_to_form(self):
-        user = create_and_save_dummy_user()
-        self.client.force_login(user)
-        self.post_data['title'] += "a" * Vollume._meta.get_field('title').max_length
-        response = self.post_request(status=status.HTTP_200_OK)
-        form = response.context['form']
-        self.assertTrue(form.has_error('title'))
-
-    def test_text_validation_errors_are_added_to_form(self):
-        user = create_and_save_dummy_user()
-        self.client.force_login(user)
-        self.post_data['text'] += 'a' * 500
-        response = self.post_request(status=status.HTTP_200_OK)
-        form = response.context['form']
-        self.assertTrue(form.has_error('text'))
-
-    def test_vollume_is_not_saved_if_paragraph_invalid(self):
-        user = create_and_save_dummy_user()
-        self.client.force_login(user)
-        del self.post_data['text']
-        self.post_request(status=status.HTTP_200_OK)
-        self.assertEqual(Vollume.objects.count(), 0)
+    @patch('vollumes.views.show_validation_errors_in_form')
+    def test_uses_show_validation_errors_in_form(self, show_validation_errors_mock):
+        self.client.force_login(create_and_save_dummy_user())
+        self.post_data['title'] += 'a' * 200
+        with self.assertRaises(ValidationError):
+            self.post_request()
+        self.assertEqual(show_validation_errors_mock.call_count, 1)
+        self.assertIsInstance(show_validation_errors_mock.call_args[0][0], CreateVollumeForm)
 
 
 class VollumeStartPageTests(WebTestCase):
@@ -102,19 +100,41 @@ class VollumeStartPageTests(WebTestCase):
         self.assertContains(response, url)
 
 
-class TestException(Exception):
-    pass
+class HandleNewParagraphFormTests(TestCase):
+    def setUp(self):
+        self.requests = RequestFactory()
+
+    def test_redirects_anonymous_users_to_login_on_post(self):
+        request = self.requests.post('/')
+        request.user = AnonymousUser()
+        parent_paragraph = create_and_save_dummy_vollume().first_paragraph
+        result = handle_new_paragraph_form(request, parent_paragraph)
+        self.assertIsInstance(result, HttpResponseRedirect)
+
+    @patch('vollumes.views.show_validation_errors_in_form')
+    def test_returned_form_has_validation_errors_on_invalid_post(self, show_validation_errors_mock):
+        request = self.requests.post('/wiki/Chickasaw_Turnpike', {'text': 'Too many words ' + ('a' * 500)})
+        request.user = create_and_save_dummy_user()
+        parent_paragraph = create_and_save_dummy_vollume(author=request.user).first_paragraph
+        with self.assertRaises(ValidationError):
+            handle_new_paragraph_form(request, parent_paragraph)
+        self.assertEqual(show_validation_errors_mock.call_count, 1)
+        self.assertIsInstance(show_validation_errors_mock.call_args[0][0], NewParagraphForm)
 
 
 class VollumePageTests(WebTestCase):
+
+    class TestException(Exception):
+        pass
+
     @patch('vollumes.views.get_paragraph_or_404', side_effect=TestException)
     def test_fetch_vollume_and_paragraph_by_hashid(self, get_parent_paragraph):
         vollume_hashid = '4fj'
-        parent_hashid = 'fjgh40'
-        url = reverse('vollume-page', kwargs={'hashid': vollume_hashid, 'page': parent_hashid})
-        with self.assertRaises(TestException):
+        parent_paragraph_hashid = 'fjgh40'
+        url = reverse('vollume-page', kwargs={'vollume_id': vollume_hashid, 'paragraph_id': parent_paragraph_hashid})
+        with self.assertRaises(self.TestException):
             self.get_request(url)
-        get_parent_paragraph.assert_called_once_with(vollume_hashid, parent_hashid)
+        get_parent_paragraph.assert_called_once_with(vollume_hashid, parent_paragraph_hashid)
 
     def test_shows_the_right_paragraphs(self):
         vollume = create_and_save_dummy_vollume()
@@ -137,19 +157,52 @@ class VollumePageTests(WebTestCase):
     def test_contains_links_to_child_pages(self):
         vollume = create_and_save_dummy_vollume()
         second_user = create_and_save_dummy_user(username='Wendy')
-        para_a = vollume.first_paragraph.add_child(
+        second_page_para_a = vollume.first_paragraph.add_child(
             author=second_user,
             text='Add on some extra words.'
         )
-        para_b = vollume.first_paragraph.add_child(
+        second_page_para_b = vollume.first_paragraph.add_child(
             author=vollume.author,
             text='Enough with all this writing'
         )
-        next_page_para = para_a.add_child(
+        third_page_para = second_page_para_a.add_child(
             author=second_user,
             text="I'll add in a bit of extra stuff too!"
         )
-        response = self.get_request(para_a.get_absolute_url())
+        response = self.get_request(second_page_para_a.get_absolute_url())
         self.assertContains(response, vollume.first_paragraph.get_absolute_url())
-        self.assertContains(response, para_a.get_next_page_url())
-        self.assertContains(response, para_b.get_next_page_url())
+        self.assertContains(response, second_page_para_a.get_next_page_url())
+        self.assertContains(response, second_page_para_b.get_next_page_url())
+
+    def test_form_posts_to_same_page(self):
+        vollume = create_and_save_dummy_vollume()
+        second_user = create_and_save_dummy_user(username='Wendy')
+        self.client.force_login(second_user)
+        second_paragraph = vollume.first_paragraph.add_child(
+            author=second_user,
+            text='Add on some extra words.'
+        )
+        url = second_paragraph.get_absolute_url()
+        response = self.get_request(url)
+        self.assertContains(response, 'action="{}"'.format(url))
+
+    def test_returns_redirects_returned_by_handle_new_paragraph_form(self):
+        vollume = create_and_save_dummy_vollume()
+        redirect = HttpResponseRedirect('/')
+        request = RequestFactory().get('/new-paragraph/')
+        with patch('vollumes.views.handle_new_paragraph_form', return_value=redirect):
+            response = vollume_page(request, vollume.hashid, vollume.first_paragraph.hashid)
+            self.assertIs(response, redirect)
+
+    def test_displays_form_returned_by_handle_new_paragraph(self):
+        vollume = create_and_save_dummy_vollume()
+        form = Mock(spec=NewParagraphForm)
+        url_kwargs = {'vollume_id': vollume.hashid, 'paragraph_id': vollume.first_paragraph.hashid}
+        url = reverse('vollume-page', kwargs=url_kwargs)
+        with patch('vollumes.views.handle_new_paragraph_form', return_value=form):
+            response = self.get_request(url)
+            self.assertIs(response.context['form'], form)
+
+
+class TestUserProfilePage(WebTestCase):
+    pass

@@ -1,11 +1,11 @@
-from django.conf.urls import url
+from django.conf.urls import url as _django_url
 from django.core.exceptions import ImproperlyConfigured
 import re
 
 
 def simple_url(url_pattern, view, kwargs=None, name=None):
     regex = _construct_regex(url_pattern, is_prefix=isinstance(view, (list, tuple)))
-    return url(regex, view, kwargs, name)
+    return _django_url(regex, view, kwargs, name)
 
 
 def _construct_regex(pattern, is_prefix):
@@ -32,7 +32,8 @@ def _dynamic_path_piece(piece):
 
 def _validate_path_piece_name(name):
     if not name or not re.match(r'^[a-zA-Z_]+$', name):
-        raise ImproperlyConfigured('Bad path piece name in simple_url pattern: {!r}'.format(name))
+        raise ImproperlyConfigured('Bad path piece name in simple_url pattern: {!r}. Format should be either '
+                                   '" piece_name " or " piece_name: type "'.format(name))
 
 
 def _pattern_for_path_piece(path_piece_type):

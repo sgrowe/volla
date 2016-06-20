@@ -1,6 +1,7 @@
 {% spaceless %}
 {% load static %}
 {% load debug_tools %}
+{% load auth_redirect %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,10 +34,10 @@
         <div class="small row ghost">
             {% if user.is_authenticated %}
                 <p><a href="{% url 'new-vollume' %}">New Vollume</a></p>
-                <p><a href="{% url 'logout' %}?next={{ request.path }}">Logout</a></p>
+                <p><a href="{% auth_redirect 'logout' %}">Logout</a></p>
             {% else %}
-                <p><a href="{% url 'login' %}?next={{ request.path }}">Login</a></p>
-                <p><a href="{% url 'register' %}?next={{ request.path }}">Sign up</a></p>
+                <p><a href="{% auth_redirect 'login' %}">Login</a></p>
+                <p><a href="{% auth_redirect 'register' %}">Sign up</a></p>
             {% endif %}
         </div>
 
