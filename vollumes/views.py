@@ -1,12 +1,11 @@
-from django import forms
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
+from form_helpers import show_validation_errors_in_form
 from users.models import User
 from vollumes.models import Vollume, create_validate_and_save_vollume, get_paragraph_or_404
-from form_helpers import show_validation_errors_in_form
+from vollumes.forms import CreateVollumeForm, handle_new_paragraph_form
 
 
 def home(request):
@@ -19,11 +18,6 @@ def home(request):
 
 class WelcomeView(TemplateView):
     template_name = 'volla/welcome-tour.html'
-
-
-class CreateVollumeForm(forms.Form):
-    title = forms.CharField(required=True)
-    text = forms.CharField(widget=forms.Textarea, required=True)
 
 
 @login_required()
@@ -57,32 +51,6 @@ def vollume_start(request, vollume_id):
         'paragraphs': [vollume.first_paragraph],
     }
     return render(request, 'vollumes/vollume.html', context)
-
-
-class NewParagraphForm(forms.Form):
-    text = forms.CharField(widget=forms.Textarea, required=True)
-
-
-def handle_new_paragraph_form(request, parent_paragraph):
-    """
-    Handles requests to views using NewParagraphForm, returning either an instance of the form or a HTTP redirect
-    as needed.
-    """
-    if request.method == 'POST':
-        if not request.user.is_authenticated():
-            login_url = '{}?next={}'.format(reverse('login'), request.build_absolute_uri())
-            return HttpResponseRedirect(login_url)
-        form = NewParagraphForm(request.POST)
-        if form.is_valid():
-            with show_validation_errors_in_form(form):
-                new_para = parent_paragraph.add_child(
-                    author=request.user,
-                    text=form.cleaned_data['text']
-                )
-                return redirect(new_para.get_absolute_url())
-    else:
-        form = NewParagraphForm()
-    return form
 
 
 def vollume_page(request, vollume_id, paragraph_id):
