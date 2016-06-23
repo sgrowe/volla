@@ -1,11 +1,11 @@
-from unittest import TestCase
+from django.test import SimpleTestCase
 from unittest.mock import patch
 from django.test import RequestFactory
 from urllib.parse import urlparse
 from users.helpers import url_for_auth_view_which_returns_to_here
 
 
-class UrlForAuthViewTests(TestCase):
+class UrlForAuthViewTests(SimpleTestCase):
     def setUp(self):
         self.requests = RequestFactory()
 

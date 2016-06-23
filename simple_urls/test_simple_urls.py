@@ -1,4 +1,4 @@
-from unittest import TestCase
+from django.test import SimpleTestCase
 from unittest.mock import Mock, patch, sentinel
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import ResolverMatch, RegexURLPattern, RegexURLResolver
@@ -6,7 +6,7 @@ from simple_urls.resolvers import simple_url, _construct_regex, _validate_path_p
 import re
 
 
-class SimpleUrlTests(TestCase):
+class SimpleUrlTests(SimpleTestCase):
     def test_resolves_urls_correctly(self):
         view = Mock()
         url = simple_url('/page/ id: int / title /', view)
@@ -46,7 +46,7 @@ class SimpleUrlTests(TestCase):
             self.assertIsInstance(resolver, RegexURLResolver)
 
 
-class ConstructRegexTests(TestCase):
+class ConstructRegexTests(SimpleTestCase):
     def assertRegexMatchesWholeString(self, regex, string, msg=None):
         msg = msg or 'Regex failed to match {!r}'.format(string)
         match = re.match(regex, string)
@@ -130,7 +130,7 @@ class ConstructRegexTests(TestCase):
             _construct_regex('docs', is_prefix=False)
 
 
-class ValidatePathPieceNameTests(TestCase):
+class ValidatePathPieceNameTests(SimpleTestCase):
     def test_allows_valid_names(self):
         valid_names = (
             'words',
@@ -154,7 +154,7 @@ class ValidatePathPieceNameTests(TestCase):
                 _validate_path_piece_name(name)
 
 
-class PatternForPathPieceTests(TestCase):
+class PatternForPathPieceTests(SimpleTestCase):
     def test_returns_valid_regex_patterns(self):
         valid_types = (
             '',

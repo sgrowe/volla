@@ -28,10 +28,10 @@ class HomePageTests(WebTestCase):
 
 
 class WelcomePageTests(TestCase):
-    def test_returns_valid(self):
+    def test_contains_register_link_if_user_logged_out(self):
         url = reverse('welcome-tour')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, reverse('register'))
 
 
 class CreateVollumeViewTests(WebTestCase):

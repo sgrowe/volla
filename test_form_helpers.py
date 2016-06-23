@@ -1,11 +1,11 @@
-from unittest import TestCase
+from django.test import SimpleTestCase
 from unittest.mock import Mock
 from django.core.exceptions import ValidationError
 from django.http import Http404
 from form_helpers import show_validation_errors_in_form
 
 
-class ShowValidationErrorsInFormTests(TestCase):
+class ShowValidationErrorsInFormTests(SimpleTestCase):
     def test_catches_validation_errors(self):
         form = Mock()
         with show_validation_errors_in_form(form):

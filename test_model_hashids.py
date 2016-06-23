@@ -1,12 +1,12 @@
-from unittest import TestCase
-from unittest.mock import Mock, patch
+from django.test import SimpleTestCase
+from unittest.mock import patch
 from django.http import Http404
 from hashids import Hashids
 from model_hashids import HashidsMixin
 from utils_for_testing import get_random_int
 
 
-class HashidsMixinTests(TestCase):
+class HashidsMixinTests(SimpleTestCase):
     def get_test_class(self, hashids=None):
 
         class TestClass(HashidsMixin):

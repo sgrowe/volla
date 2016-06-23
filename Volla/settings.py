@@ -169,7 +169,10 @@ else:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 
-DEFAULT_FROM_EMAIL = 'support@volla.co'
+SUPPORT_EMAIL = 'support@volla.co'
+
+
+DEFAULT_FROM_EMAIL = SUPPORT_EMAIL
 
 
 EMAIL_HOST = 'smtp.sparkpostmail.com'

@@ -1,13 +1,62 @@
 {% extends 'volla/base.html' %}
 
+{% load email %}
+
 
 {% block content %}
 
     <div class="text-container">
 
-        <h1 class="title">Welcome to Volla</h1>
+        <h1 class="title large">Welcome to Volla</h1>
 
-        <p class="margin-top">Volla is a place for social story writing.</p>
+        <div class="space-out-children margin-top">
+
+            <p>
+                Volla is a place for social story writing.
+            </p>
+
+            <p>
+                On Volla, people work together to create amazing stories in bite-sized chunks.
+            </p>
+
+            <p>
+                These stories, which we (slightly pretentiously) call Vollumes, are different to reguar stories in that
+                anyone, at any time, can suggest a different direction for the Vollume to take.
+            </p>
+
+            <p>
+                So if you're reading a Vollume and reach the end of what's been written so far, you can continue the
+                story yourself!
+            </p>
+
+            <p>
+                Similarly, if you think of an interesting, alternative storyline for the Vollume you are currently
+                reading, just scroll to the bottom of the page and start typing!
+            </p>
+
+            <p>
+                If you're not too sure how Volla works, or have a few questions, feel free to
+                email us at {% email %}.
+
+                Otherwise, go ahead and
+
+                {% if user.is_authenticated %}
+                    <a href="{% url 'new-vollume' %}">start a new Vollume!</a>
+                {% else %}
+                    <a href="{% url 'register' %}">join Volla!</a>
+                {% endif %}
+            </p>
+
+            <p>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'new-vollume' %}" class="right-arrow">Create a Vollume</a>
+                {% else %}
+                    <a href="{% url 'register' %}" class="right-arrow">Join Volla</a>
+                {% endif %}
+
+            </p>
+
+        </div>
 
     </div>
 
