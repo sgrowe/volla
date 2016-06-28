@@ -5,9 +5,12 @@ from django.core.urlresolvers import reverse
 from django.db.transaction import atomic
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from users.models import User
 from model_hashids import HashidsMixin
 from hashids import Hashids
+import re
 
 
 def get_paragraph_or_404(vollume_hashid, paragraph_hashid):
@@ -83,6 +86,15 @@ class VollumeChunk(HashidsMixin, models.Model):
         child.full_clean()
         child.save()
         return child
+
+    def text_as_html(self):
+        return mark_safe(''.join(self._format_paragraphs()))
+
+    def _format_paragraphs(self):
+        text = self.text.replace('\r\n', '\n')
+        for paragraph in re.split(r'\n{2,}', text):
+            paragraph = escape(paragraph).replace('\n', '<br>')
+            yield '<p class="margin-top">{}</p>'.format(paragraph)
 
     def clean(self):
         super().clean()

@@ -8,3 +8,4 @@ class VollumeAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Vollume, VollumeAdmin)
+admin.site.register(VollumeChunk)

@@ -1,8 +1,9 @@
-from unittest import mock
 from django.test import TestCase
+from unittest.mock import patch
 from django.http import Http404
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.utils import timezone
+from django.utils.safestring import SafeText
 from model_hashids import HashidsMixin
 from vollumes.models import Vollume, VollumeChunk, create_validate_and_save_vollume, get_paragraph_or_404
 from utils_for_testing import create_and_save_dummy_user, create_and_save_dummy_vollume, get_random_int
@@ -44,14 +45,14 @@ class CreateVollumeHelperTests(TestCase):
             self.assertEqual(len(Vollume.objects.all()), 0)
             self.assertEqual(len(VollumeChunk.objects.all()), 0)
 
-    @mock.patch.object(Vollume, 'full_clean')
+    @patch.object(Vollume, 'full_clean')
     def test_create_vollume_helper_calls_full_clean_on_vollume(self, vollume_full_clean):
         title = 'New vollume title'
         text = 'Text for the first paragraph'
         create_validate_and_save_vollume(author=self.user, title=title, text=text)
         vollume_full_clean.assert_called_once_with()
 
-    @mock.patch.object(VollumeChunk, 'full_clean')
+    @patch.object(VollumeChunk, 'full_clean')
     def test_create_vollume_helper_calls_full_clean_on_vollume_chunk(self, vollume_chunk_full_clean):
         title = 'New vollume title'
         text = 'Text for the first paragraph'
@@ -276,3 +277,55 @@ class VollumeChunkTests(TestCase):
             text='sjalfsrgbolr'
         )
         self.assertEqual(parent_paragraph.get_next_page_url(), child.get_absolute_url())
+
+
+class VollumeChunkTextAsHtmlTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.vollume = create_and_save_dummy_vollume()
+
+    def _new_chunk(self, text):
+        return self.vollume.first_paragraph.add_child(
+            author=self.vollume.author,
+            text=text
+        )
+
+    def test_puts_paragraphs_in_p_tags(self):
+        paragraphs = (
+            (
+                'Just some simple stuff. Only the one p tag',
+                '<p class="margin-top">Just some simple stuff. Only the one p tag</p>'
+            ),
+            (
+                'This is the first paragraph.\r\n\r\nAnd here is the next one. They should be seperate.',
+                '<p class="margin-top">This is the first paragraph.</p>'
+                '<p class="margin-top">And here is the next one. They should be seperate.</p>'
+            ),
+            (
+                'The method should work with both types of line endings\n\nAnd still produce the same result.',
+                '<p class="margin-top">The method should work with both types of line endings</p>'
+                '<p class="margin-top">And still produce the same result.</p>'
+            ),
+            (
+                'Single new lines should\nonly result in\r\na line break.',
+                '<p class="margin-top">Single new lines should<br>only result in<br>a line break.</p>'
+            ),
+        )
+        for raw_text, expected_html in paragraphs:
+            chunk = self._new_chunk(raw_text)
+            self.assertHTMLEqual(chunk.text_as_html(), expected_html)
+
+    def test_escapes_html(self):
+        paragraphs = (
+            (
+                'Did you know that 8 > 6? <i>Yeah</i>',
+                '<p class="margin-top">Did you know that 8 &gt; 6? &lt;i&gt;Yeah&lt;/i&gt;</p>'
+            ),
+        )
+        for raw_text, expected_html in paragraphs:
+            chunk = self._new_chunk(raw_text)
+            self.assertHTMLEqual(chunk.text_as_html(), expected_html)
+
+    def test_returns_safe_text(self):
+        chunk = self._new_chunk("One helluva yarn.")
+        self.assertIsInstance(chunk.text_as_html(), SafeText)
