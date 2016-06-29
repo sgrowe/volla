@@ -3,6 +3,16 @@ from users.forms import RegisterForm
 from utils_for_testing import create_and_save_dummy_user
 
 
+def disable_logging_when_testing():
+    import logging
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == 'test':
+        logging.disable(logging.CRITICAL)
+
+
+disable_logging_when_testing()
+
+
 class RegisterFormTests(TestCase):
     def test_two_password_fields_must_match(self):
         form_data = {

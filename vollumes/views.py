@@ -6,6 +6,10 @@ from form_helpers import show_validation_errors_in_form
 from users.models import User
 from vollumes.models import Vollume, create_validate_and_save_vollume, get_paragraph_or_404
 from vollumes.forms import CreateVollumeForm, handle_new_paragraph_form
+import logging
+
+
+logger = logging.getLogger('volla.vollumes')
 
 
 def home(request):
@@ -31,6 +35,7 @@ def new_vollume(request):
                     title=form.cleaned_data['title'],
                     text=form.cleaned_data['text']
                 )
+                logger.info('New vollume titled "%s" created by %s', vollume.title, vollume.author)
                 return redirect(vollume)
     else:
         form = CreateVollumeForm()

@@ -3,6 +3,10 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from form_helpers import show_validation_errors_in_form
 from users.helpers import url_for_auth_view_which_returns_to_here
+import logging
+
+
+logger = logging.getLogger('volla.vollumes')
 
 
 class CreateVollumeForm(forms.Form):
@@ -29,6 +33,11 @@ def handle_new_paragraph_form(request, parent_paragraph):
                 new_para = parent_paragraph.add_child(
                     author=request.user,
                     text=form.cleaned_data['text']
+                )
+                logger.info(
+                    'New paragraph for vollume "%s" created by user %s',
+                    parent_paragraph.vollume,
+                    new_para.author
                 )
                 return redirect(new_para)
     else:

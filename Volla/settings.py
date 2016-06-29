@@ -190,7 +190,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 
-# Error emails
+# Logging
 
 
 SERVER_EMAIL = 'errors@volla.co'
@@ -213,6 +213,45 @@ IGNORABLE_404_URLS = (
 INTERNAL_IPS = (
     '127.0.0.1',
 )
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': ('%(asctime)s [%(process)d] [%(levelname)s] pathname=%(pathname)s '
+                       'lineno=%(lineno)s funcname=%(funcName)s %(message)s'),
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        }
+    },
+    'handlers': {
+        'null': {
+            'level': 'DEBUG',
+            'class': 'logging.NullHandler',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_false'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        }
+    },
+    'loggers': {
+        'volla': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        }
+    },
+}
 
 
 # Caching

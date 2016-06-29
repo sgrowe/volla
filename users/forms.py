@@ -1,6 +1,9 @@
 from django import forms
 from django.contrib.auth.password_validation import validate_password
 from users.models import User
+import logging
+
+logger = logging.getLogger('volla.users')
 
 
 class RegisterForm(forms.ModelForm):
@@ -27,5 +30,6 @@ class RegisterForm(forms.ModelForm):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
         if commit:
+            logger.info('New user registered with username %r and email %r', user.username, user.email)
             user.save()
         return user

@@ -64,10 +64,6 @@ class GetParentParagraphTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.vollume = create_and_save_dummy_vollume()
-        cls.child_paragraph = cls.vollume.first_paragraph.add_child(
-            cls.vollume.author,
-            'A whole load of words'
-        )
 
     def test_raises_404_on_invalid_vollume_hashid(self):
         bad_hashids = (
@@ -95,8 +91,12 @@ class GetParentParagraphTests(TestCase):
                 get_paragraph_or_404(self.vollume.hashid, hashid)
 
     def test_returns_parent_paragraph_model(self):
-        paragraph = get_paragraph_or_404(self.vollume.hashid, self.child_paragraph.hashid)
-        self.assertEqual(paragraph, self.child_paragraph)
+        child_paragraph = self.vollume.first_paragraph.add_child(
+            self.vollume.author,
+            'A whole load of words'
+        )
+        paragraph = get_paragraph_or_404(self.vollume.hashid, child_paragraph.hashid)
+        self.assertEqual(paragraph, child_paragraph)
 
 
 class VollumeTests(TestCase):
@@ -226,19 +226,10 @@ class VollumeChunkTests(TestCase):
         self.assertIn("The author of the first paragraph of a Vollume must also be the Vollume author.", error_messages)
 
     def test_text_is_required(self):
-        user = create_and_save_dummy_user(
-            username='BigOlBoi',
-            email='biggyB@webs.com'
-        )
-        dummy_vollume = Vollume(
-            author=user,
-            title='Filler words, KILLER words',
-        )
-        dummy_vollume.save()
         for text in (None, ''):
             new_chunk = VollumeChunk(
-                vollume=dummy_vollume,
-                author=user,
+                vollume=self.vollume,
+                author=self.vollume.author,
                 text=text
             )
             with self.assertRaises(ValidationError) as caught:
