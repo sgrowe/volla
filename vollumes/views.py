@@ -14,7 +14,7 @@ logger = logging.getLogger('volla.vollumes')
 
 def home(request):
     context = {
-        'whole-title': 'Volla - Social story writing',
+        'whole-title': 'Volla - Social story telling',
         'vollumes': Vollume.objects.all(),
     }
     return render(request, 'vollumes/home.html', context)
