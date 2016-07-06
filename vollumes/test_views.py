@@ -1,5 +1,5 @@
 from utils_for_testing import WebTestCase, create_and_save_dummy_vollume, create_and_save_dummy_user
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 from django.test import RequestFactory
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
@@ -85,14 +85,17 @@ class VollumeStartPageTests(WebTestCase):
     def setUpTestData(cls):
         cls.vollume = create_and_save_dummy_vollume()
 
+    def setUp(self):
+        self.url = self.vollume.get_absolute_url()
+
     def test_view_uses_correct_vollume(self):
-        response = self.get_request(self.vollume.get_absolute_url())
+        response = self.get_request()
         self.assertIn('paragraphs', response.context)
         self.assertEqual(response.context['paragraphs'][0].pk, self.vollume.first_paragraph.pk)
 
     def test_contains_first_paragraph_text(self):
-        response = self.get_request(self.vollume.get_absolute_url())
-        self.assertContains(response, '{}'.format(self.vollume.first_paragraph.text))
+        response = self.get_request()
+        self.assertContains(response, self.vollume.first_paragraph.text)
 
     def test_contains_link_to_next_page(self):
         second_para = self.vollume.first_paragraph.add_child(
@@ -100,7 +103,7 @@ class VollumeStartPageTests(WebTestCase):
             'Even more words'
         )
         url = 'href="{}"'.format(second_para.get_absolute_url())
-        response = self.get_request(self.vollume.get_absolute_url())
+        response = self.get_request()
         self.assertContains(response, url)
 
 
@@ -110,17 +113,18 @@ class VollumePageTests(WebTestCase):
         cls.vollume = create_and_save_dummy_vollume()
         cls.second_user = create_and_save_dummy_user(username='Wendy')
 
-    class TestException(Exception):
-        pass
-
-    @patch('vollumes.views.get_paragraph_or_404', side_effect=TestException)
-    def test_fetch_vollume_and_paragraph_by_hashid(self, get_parent_paragraph):
+    def test_fetch_vollume_and_paragraph_by_hashid(self):
         vollume_hashid = '4fj'
-        parent_paragraph_hashid = 'fjgh40'
-        url = reverse('vollume-page', kwargs={'vollume_id': vollume_hashid, 'paragraph_id': parent_paragraph_hashid})
-        with self.assertRaises(self.TestException):
-            self.get_request(url)
-        get_parent_paragraph.assert_called_once_with(vollume_hashid, parent_paragraph_hashid)
+        parent_para_hashid = 'fjgh40'
+
+        class TestException(Exception):
+            pass
+
+        with patch('vollumes.views.get_paragraph_or_404', side_effect=TestException) as get_parent_paragraph:
+            url = reverse('vollume-page', kwargs={'vollume_id': vollume_hashid, 'paragraph_id': parent_para_hashid})
+            with self.assertRaises(TestException):
+                self.get_request(url)
+        get_parent_paragraph.assert_called_once_with(vollume_hashid, parent_para_hashid)
 
     def test_shows_the_right_paragraphs(self):
         para_a = self.vollume.first_paragraph.add_child(

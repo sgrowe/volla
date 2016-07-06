@@ -1,7 +1,7 @@
 from django.test import TestCase
 from users.models import User
 from django.core import mail
-import http_status_codes as status
+from http import HTTPStatus as status
 
 
 class UserTests(TestCase):
@@ -9,7 +9,7 @@ class UserTests(TestCase):
         user = User(username='Mohammed', email='mr-m@yahoo.com')
         user.save()
         response = self.client.get(user.get_absolute_url())
-        self.assertTrue(status.is_success(response.status_code))
+        self.assertEqual(response.status_code, status.OK)
 
     def test_email_user(self):
         user = User(username='Missy Elliot', email='missy@gmail.com')
