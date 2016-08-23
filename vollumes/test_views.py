@@ -80,6 +80,24 @@ class CreateVollumeViewTests(WebTestCase):
         self.assertIsInstance(show_validation_errors_mock.call_args[0][0], CreateVollumeForm)
 
 
+class RegisterThenCreateVollumeTests(WebTestCase):
+    def test_user_can_register_and_then_create_new_vollume(self):
+        register_url = reverse('register')
+        register_data = {
+            'username': 'JimmyJoo',
+            'email': 'jj@gmail.com',
+            'password': 'flujjer1',
+            'password_repeat': 'flujjer1',
+        }
+        self.post_request(register_url, register_data)
+        new_vollume_url = reverse('new-vollume')
+        vollume_data = {
+            'title': 'Within reach',
+            'text': 'What does it even mean, dude?'
+        }
+        self.post_request(new_vollume_url, vollume_data)
+
+
 class VollumeStartPageTests(WebTestCase):
     @classmethod
     def setUpTestData(cls):

@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from users.models import User
+from django.conf import settings
 from model_hashids import HashidsMixin
 from hashids import Hashids
 import re
@@ -38,7 +38,7 @@ def create_validate_and_save_vollume(author, title, text):
 
 class Vollume(HashidsMixin, models.Model):
     created = models.DateTimeField(default=timezone.now)
-    author = models.ForeignKey(User, related_name='vollumes')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='vollumes')
     title = models.CharField(max_length=150, validators=[MinLengthValidator(1)])
     # allows_forks = models.BooleanField()
     # allows_alternative_paras = models.BooleanField()
@@ -59,7 +59,7 @@ class Vollume(HashidsMixin, models.Model):
 class VollumeChunk(HashidsMixin, models.Model):
     vollume = models.ForeignKey(Vollume, related_name='structure')
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
-    author = models.ForeignKey(User, related_name='contributions')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='contributions')
     text = models.TextField(validators=[MinLengthValidator(1), MaxLengthValidator(500)])
 
     def __str__(self):
