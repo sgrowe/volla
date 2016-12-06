@@ -2,8 +2,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
+from django.contrib.auth import get_user_model
 from form_helpers import show_validation_errors_in_form
-from users.models import User
 from vollumes.models import Vollume, create_validate_and_save_vollume, get_paragraph_or_404
 from vollumes.forms import CreateVollumeForm, handle_new_paragraph_form
 import logging
@@ -76,7 +76,7 @@ def vollume_page(request, vollume_id, paragraph_id):
 
 
 def user_profile(request, user_id):
-    user = User.get_by_hashid_or_404(user_id)
+    user = get_user_model().get_by_hashid_or_404(user_id)
     context = {
         'title': 'User {}'.format(user.username),
         'user': user,
