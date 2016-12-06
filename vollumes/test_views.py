@@ -72,6 +72,8 @@ class CreateVollumeViewTests(WebTestCase):
 
     @patch('vollumes.views.show_validation_errors_in_form')
     def test_uses_show_validation_errors_in_form(self, show_validation_errors_mock):
+        show_validation_errors_mock.__enter__ = Mock()
+        show_validation_errors_mock.__exit__ = Mock()
         self.client.force_login(self.user)
         self.post_data['title'] += 'a' * 200
         with self.assertRaises(ValidationError):
