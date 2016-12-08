@@ -19,7 +19,7 @@ SECRET_KEY = 'p-zelz*2j$k-n6(b#i^1n4pnx53^zjw@)nln^+yr4o%h84#g#)'
 DEBUG = os.environ.get('VOLLA_DEV') == 'TRUE'
 
 
-ALLOWED_HOSTS = (
+ALLOWED_HOSTS = ('*',) if DEBUG else (
     'www.volla.co',
 )
 
