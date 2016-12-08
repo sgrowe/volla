@@ -199,6 +199,13 @@ class VollumeChunkTests(TestCase):
         error_messages = caught.exception.message_dict[NON_FIELD_ERRORS]
         self.assertIn("A Vollume can't have more than one starting paragraph.", error_messages)
 
+    def test_saves_created_timestamp(self):
+        parent = self.vollume.first_paragraph
+        before = timezone.now()
+        child = parent.add_child(parent.author, 'That brexit soup')
+        after = timezone.now()
+        self.assertTrue(before < child.created < after)
+
     def test_add_child_method(self):
         new_chunk = self.vollume.first_paragraph.add_child(
             author=create_and_save_dummy_user(username='Hi guys'),

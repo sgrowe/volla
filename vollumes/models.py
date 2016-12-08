@@ -61,6 +61,7 @@ class VollumeChunk(HashidsMixin, models.Model):
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='contributions')
     text = models.TextField(validators=[MinLengthValidator(1), MaxLengthValidator(500)])
+    created = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return "{} - {}".format(self.vollume, self.text)
