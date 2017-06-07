@@ -1,3 +1,5 @@
+from django.test import TestCase
+
 from utils_for_testing import WebTestCase, create_and_save_dummy_vollume, create_and_save_dummy_user
 from unittest.mock import Mock, patch
 from django.test import RequestFactory
@@ -7,35 +9,37 @@ from django.core.urlresolvers import reverse
 from vollumes.models import Vollume, VollumeChunk
 from vollumes.forms import NewParagraphForm, CreateVollumeForm
 from vollumes.views import vollume_page
+from http import HTTPStatus as status
 
 
-class HomePageTests(WebTestCase):
+class HomePageTests(TestCase):
     def setUp(self):
         self.url = reverse('home')
 
     def test_includes_login_link_when_logged_out(self):
-        response = self.get_request()
+        response = self.client.get(self.url)
         login_link = '<a href="{}?next={}">Login</a>'.format(reverse('login'), self.url)
         self.assertContains(response, login_link, html=True)
 
     def test_includes_logout_link_when_logged_in(self):
         user = create_and_save_dummy_user()
         self.client.force_login(user)
-        response = self.get_request()
+        response = self.client.get(self.url)
         logout_link = '<a href="{}?next={}">Logout</a>'.format(reverse('logout'), self.url)
         self.assertContains(response, logout_link, html=True)
 
 
-class WelcomePageTests(WebTestCase):
-    def setUp(self):
-        self.url = reverse('welcome-tour')
+class WelcomePageTests(TestCase):
+    def test_returns_200_response(self):
+        response = self.client.get(reverse('welcome-tour'))
+        self.assertEqual(response.status_code, status.OK)
 
     def test_contains_register_link_if_user_logged_out(self):
-        response = self.get_request()
+        response = self.client.get(reverse('welcome-tour'))
         self.assertContains(response, reverse('register'))
 
 
-class CreateVollumeViewTests(WebTestCase):
+class CreateVollumeViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = create_and_save_dummy_user()
@@ -56,14 +60,14 @@ class CreateVollumeViewTests(WebTestCase):
 
     def test_redirects_to_created_vollume_on_success(self):
         self.client.force_login(self.user)
-        response = self.post_request()
+        response = self.client.post(self.url, self.post_data)
         self.assertEqual(Vollume.objects.count(), 1)
         vollume = Vollume.objects.first()
         self.assertRedirects(response, vollume.get_absolute_url(), fetch_redirect_response=False)
 
-    def test_author_of_created_vollume_and_paragraph_is_logged_in_user(self):
+    def test_author_of_created_vollume_and_paragraph_is_the_logged_in_user(self):
         self.client.force_login(self.user)
-        self.post_request()
+        self.client.post(self.url, self.post_data)
         self.assertEqual(Vollume.objects.count(), 1)
         self.assertEqual(VollumeChunk.objects.count(), 1)
         vollume = Vollume.objects.first()
@@ -77,7 +81,7 @@ class CreateVollumeViewTests(WebTestCase):
         self.client.force_login(self.user)
         self.post_data['title'] += 'a' * 200
         with self.assertRaises(ValidationError):
-            self.post_request()
+            self.client.post(self.url, self.post_data)
         self.assertEqual(show_validation_errors_mock.call_count, 1)
         self.assertIsInstance(show_validation_errors_mock.call_args[0][0], CreateVollumeForm)
 
@@ -100,21 +104,18 @@ class RegisterThenCreateVollumeTests(WebTestCase):
         self.post_request(new_vollume_url, vollume_data)
 
 
-class VollumeStartPageTests(WebTestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.vollume = create_and_save_dummy_vollume()
-
+class VollumeStartPageTests(TestCase):
     def setUp(self):
+        self.vollume = create_and_save_dummy_vollume()
         self.url = self.vollume.get_absolute_url()
 
     def test_view_uses_correct_vollume(self):
-        response = self.get_request()
+        response = self.client.get(self.url)
         self.assertIn('paragraphs', response.context)
         self.assertEqual(response.context['paragraphs'][0].pk, self.vollume.first_paragraph.pk)
 
     def test_contains_first_paragraph_text(self):
-        response = self.get_request()
+        response = self.client.get(self.url)
         self.assertContains(response, self.vollume.first_paragraph.text)
 
     def test_contains_link_to_next_page(self):
@@ -122,9 +123,8 @@ class VollumeStartPageTests(WebTestCase):
             self.vollume.author,
             'Even more words'
         )
-        url = 'href="{}"'.format(second_para.get_absolute_url())
-        response = self.get_request()
-        self.assertContains(response, url)
+        response = self.client.get(self.url)
+        self.assertContains(response, 'href="{}"'.format(second_para.get_absolute_url()))
 
 
 class VollumePageTests(WebTestCase):
@@ -207,4 +207,13 @@ class VollumePageTests(WebTestCase):
 
 
 class TestUserProfilePage(WebTestCase):
-    pass
+    def test_returns_200_response(self):
+        user = create_and_save_dummy_user()
+        response = self.client.get(user.get_absolute_url())
+        self.assertEqual(response.status_code, status.OK)
+
+    @patch('vollumes.views.get_users_most_recent_contributions')
+    def test_uses_get_users_most_recent_contributions(self, mock):
+        user = create_and_save_dummy_user()
+        response = self.get_request(user.get_absolute_url())
+        self.assertIs(response.context['users_contributions'], mock.return_value)

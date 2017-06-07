@@ -9,11 +9,8 @@ from vollumes.models import VollumeChunk
 
 
 class HandleNewParagraphFormTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.vollume = create_and_save_dummy_vollume()
-
     def setUp(self):
+        self.vollume = create_and_save_dummy_vollume()
         self.requests = RequestFactory()
 
     def test_redirects_anonymous_users_to_login_on_post(self):
@@ -35,7 +32,6 @@ class HandleNewParagraphFormTests(TestCase):
 
     def test_creates_new_paragraph_on_valid_post(self):
         post_data = {
-            'title': 'Fly you fools',
             'text': "Why didn't the eagles just fly them there?",
         }
         request = self.requests.post('/wiki/Chickasaw_Turnpike', post_data)
@@ -46,3 +42,15 @@ class HandleNewParagraphFormTests(TestCase):
         self.assertIsInstance(response, HttpResponseRedirect)
         self.assertEqual(VollumeChunk.objects.count(), 2)
         self.assertEqual(parent_paragraph.children.count(), 1)
+
+    @patch('vollumes.forms.new_activity')
+    def test_logs_created_vollume_chunk_activity(self, mock):
+        post_data = {
+            'text': "Why didn't the eagles just fly them there?",
+        }
+        author = self.vollume.author
+        request = self.requests.post('/wiki/Chickasaw_Turnpike', post_data)
+        request.user = author
+        parent_paragraph = self.vollume.first_paragraph
+        handle_new_paragraph_form(request, parent_paragraph)
+        mock.assert_called_once_with('new vollume chunk', author)

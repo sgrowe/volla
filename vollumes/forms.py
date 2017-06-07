@@ -1,6 +1,7 @@
 from django import forms
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
+from activity.models import new_activity
 from form_helpers import show_validation_errors_in_form
 from users.helpers import url_for_auth_view_which_returns_to_here
 import logging
@@ -30,14 +31,16 @@ def handle_new_paragraph_form(request, parent_paragraph):
         form = NewParagraphForm(request.POST)
         if form.is_valid():
             with show_validation_errors_in_form(form):
+                author = request.user
                 new_para = parent_paragraph.add_child(
-                    author=request.user,
+                    author=author,
                     text=form.cleaned_data['text']
                 )
+                new_activity('new vollume chunk', author)
                 logger.info(
                     'New paragraph for vollume "%s" created by user %s',
                     parent_paragraph.vollume,
-                    new_para.author
+                    author
                 )
                 return redirect(new_para)
     else:

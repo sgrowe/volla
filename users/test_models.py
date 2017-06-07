@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 from users.models import User
 from django.core import mail
@@ -11,6 +13,7 @@ class UserTests(TestCase):
         response = self.client.get(user.get_absolute_url())
         self.assertEqual(response.status_code, status.OK)
 
+    @patch('django.core.mail.message.DNS_NAME', 'www.volla.co')
     def test_email_user(self):
         user = User(username='Missy Elliot', email='missy@gmail.com')
         user.save()
@@ -19,3 +22,4 @@ class UserTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         self.assertEqual(email.to, ['missy@gmail.com'])
+        self.assertEqual(email.from_email, 'support@volla.co')

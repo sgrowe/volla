@@ -59,6 +59,13 @@ class CreateVollumeHelperTests(TestCase):
         create_validate_and_save_vollume(author=self.user, title=title, text=text)
         vollume_chunk_full_clean.assert_called_once_with()
 
+    @patch('vollumes.models.new_activity')
+    def test_logs_new_vollume_activity(self, mock):
+        title = 'New vollume title'
+        text = 'Text for the first paragraph'
+        create_validate_and_save_vollume(author=self.user, title=title, text=text)
+        mock.assert_called_once_with('new vollume', self.user)
+
 
 class GetParentParagraphTests(TestCase):
     @classmethod
@@ -100,14 +107,11 @@ class GetParentParagraphTests(TestCase):
 
 
 class VollumeTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.vollume = create_and_save_dummy_vollume()
-
     def test_vollume_url_contains_its_hashid(self):
+        vollume = Vollume()
         for pk in (get_random_int() for _ in range(10)):
-            self.vollume.pk = pk
-            self.assertIn(self.vollume.hashid, self.vollume.get_absolute_url())
+            vollume.pk = pk
+            self.assertIn(vollume.hashid, vollume.get_absolute_url())
 
     def test_new_vollumes_have_an_accurate_creation_time_stamp(self):
         before = timezone.now()
@@ -115,7 +119,6 @@ class VollumeTests(TestCase):
             title="You won't believe what happened once upon a time!",
             author=create_and_save_dummy_user(username='BroMo', email='mo-yo@wibwob.ru')
         )
-        vollume.save()
         after = timezone.now()
         self.assertIsNotNone(vollume.created)
         self.assertTrue(before < vollume.created < after)
@@ -154,6 +157,7 @@ class VollumeTests(TestCase):
         self.assertIsInstance(Vollume(), HashidsMixin)
 
     def test_vollume_hashids(self):
+        vollume = Vollume()
         hashids = (
             (4, 'YRzY'),
             (30, 'wvMj'),
@@ -164,13 +168,14 @@ class VollumeTests(TestCase):
             (26482746, 'qeNGoL'),
         )
         for pk, hashid in hashids:
-            self.vollume.pk = pk
-            self.assertEqual(self.vollume.hashid, hashid)
+            vollume.pk = pk
+            self.assertEqual(vollume.hashid, hashid)
 
     def test_get_by_hashid_or_404_returns_vollume(self):
-        retrieved = Vollume.get_by_hashid_or_404(self.vollume.hashid)
+        vollume = create_and_save_dummy_vollume()
+        retrieved = Vollume.get_by_hashid_or_404(vollume.hashid)
         self.assertIsInstance(retrieved, Vollume)
-        self.assertEqual(retrieved.pk, self.vollume.pk)
+        self.assertEqual(retrieved.pk, vollume.pk)
 
 
 class VollumeChunkTests(TestCase):
@@ -278,9 +283,8 @@ class VollumeChunkTests(TestCase):
 
 
 class VollumeChunkTextAsHtmlTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.vollume = create_and_save_dummy_vollume()
+    def setUp(self):
+        self.vollume = create_and_save_dummy_vollume()
 
     def _new_chunk(self, text):
         return self.vollume.first_paragraph.add_child(

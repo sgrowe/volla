@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.conf import settings
+from activity.models import new_activity
 from model_hashids import HashidsMixin
 from hashids import Hashids
 import re
@@ -33,6 +34,7 @@ def create_validate_and_save_vollume(author, title, text):
             text=text
         )
         vollume_chunk.full_clean()
+        new_activity('new vollume', author)
     return vollume
 
 

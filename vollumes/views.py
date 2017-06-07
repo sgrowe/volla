@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from form_helpers import show_validation_errors_in_form
 from vollumes.models import Vollume, create_validate_and_save_vollume, get_paragraph_or_404
 from vollumes.forms import CreateVollumeForm, handle_new_paragraph_form
+from vollumes.helpers import get_users_most_recent_contributions
 import logging
 
 
@@ -80,5 +81,6 @@ def user_profile(request, user_id):
     context = {
         'title': 'User {}'.format(user.username),
         'user': user,
+        'users_contributions': get_users_most_recent_contributions(user),
     }
     return render(request, 'vollumes/user.html', context)

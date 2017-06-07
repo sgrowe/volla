@@ -36,6 +36,7 @@ INSTALLED_APPS = (
     'crispy_forms',
     'vollumes',
     'users',
+    'activity',
 )
 
 
